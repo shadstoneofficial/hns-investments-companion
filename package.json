@@ -8,7 +8,8 @@
   "scripts": {
     "start": "electron .",
     "scan": "node scripts/smoke-scan.js",
-    "test": "node scripts/smoke-scan.js --json"
+    "test": "node scripts/smoke-scan.js --json",
+    "package-mac-notarized": "bash scripts/build-notarized-macos.sh"
   },
   "keywords": [
     "handshake",
@@ -18,7 +19,27 @@
     "portfolio"
   ],
   "devDependencies": {
-    "electron": "^31.7.7"
+    "electron": "^31.7.7",
+    "electron-builder": "^26.15.0"
+  },
+  "build": {
+    "appId": "com.hnsinvestments.companion",
+    "productName": "HNS Investments",
+    "artifactName": "HNS-Investments-${version}-${arch}.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.finance",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "target": [
+        "dir"
+      ]
+    }
   }
 }
-
