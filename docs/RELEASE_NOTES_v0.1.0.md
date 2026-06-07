@@ -13,12 +13,14 @@ First public prerelease of HNS Investments, a read-only desktop companion for Ha
 
 ## macOS Release Verification
 
-This prerelease includes signed, notarized, stapled, and Gatekeeper-verified macOS DMGs for Apple Silicon and Intel Macs.
+This prerelease includes signed, notarized, stapled, and Gatekeeper-verified macOS DMGs for Apple Silicon and Intel Macs. Windows and Linux builds are also included for internal testing.
 
 Included assets:
 
 - `HNS-Investments-0.1.0-arm64.dmg`
 - `HNS-Investments-0.1.0-x64.dmg`
+- `HNS-Investments-0.1.0-x64.exe`
+- `HNS-Investments-0.1.0-x86_64.AppImage`
 - `SHA256SUMS.txt`
 
 ## Notes
