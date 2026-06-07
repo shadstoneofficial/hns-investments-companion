@@ -23,12 +23,12 @@ jobs:
             runner: windows-latest
             package_script: package-win
             asset_glob: dist/*.exe
-            checksum_glob: '*.exe'
+            checksum_ext: .exe
           - platform: linux
             runner: ubuntu-latest
             package_script: package-linux
             asset_glob: dist/*.AppImage
-            checksum_glob: '*.AppImage'
+            checksum_ext: .AppImage
 
     steps:
       - name: Check out repository
@@ -53,7 +53,7 @@ jobs:
         shell: bash
         run: |
           cd dist
-          shasum -a 256 ${{ matrix.checksum_glob }} > SHA256SUMS-${{ matrix.platform }}.txt
+          node -e "const fs=require('fs');const crypto=require('crypto');const ext='${{ matrix.checksum_ext }}';const files=fs.readdirSync('.').filter((name)=>name.endsWith(ext)).sort();if(!files.length){throw new Error('No assets matched checksum extension '+ext)};const lines=files.map((name)=>crypto.createHash('sha256').update(fs.readFileSync(name)).digest('hex')+'  '+name);fs.writeFileSync('SHA256SUMS-${{ matrix.platform }}.txt',lines.join('\n')+'\n');"
           cat SHA256SUMS-${{ matrix.platform }}.txt
 
       - name: Upload workflow artifact
