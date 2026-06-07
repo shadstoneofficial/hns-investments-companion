@@ -9,7 +9,9 @@
     "start": "electron .",
     "scan": "node scripts/smoke-scan.js",
     "test": "node scripts/smoke-scan.js --json",
-    "package-mac-notarized": "bash scripts/build-notarized-macos.sh"
+    "package-mac-notarized": "bash scripts/build-notarized-macos.sh",
+    "package-win": "electron-builder --win nsis --x64 --publish=never",
+    "package-linux": "electron-builder --linux AppImage --x64 --publish=never"
   },
   "keywords": [
     "handshake",
@@ -39,6 +41,27 @@
       "gatekeeperAssess": false,
       "target": [
         "dir"
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "category": "Finance",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     }
   }

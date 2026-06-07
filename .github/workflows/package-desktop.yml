@@ -1,0 +1,74 @@
+name: Package desktop assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: GitHub release tag to upload assets to
+        required: true
+        default: v0.1.0
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Package ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            runner: windows-latest
+            package_script: package-win
+            asset_glob: dist/*.exe
+            checksum_glob: '*.exe'
+          - platform: linux
+            runner: ubuntu-latest
+            package_script: package-linux
+            asset_glob: dist/*.AppImage
+            checksum_glob: '*.AppImage'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run smoke test
+        run: npm test
+
+      - name: Package ${{ matrix.platform }}
+        run: npm run ${{ matrix.package_script }}
+
+      - name: Create checksum
+        shell: bash
+        run: |
+          cd dist
+          shasum -a 256 ${{ matrix.checksum_glob }} > SHA256SUMS-${{ matrix.platform }}.txt
+          cat SHA256SUMS-${{ matrix.platform }}.txt
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hns-investments-${{ matrix.platform }}-${{ github.event.inputs.release_tag }}
+          path: |
+            ${{ matrix.asset_glob }}
+            dist/SHA256SUMS-${{ matrix.platform }}.txt
+          if-no-files-found: error
+
+      - name: Upload assets to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+        shell: bash
+        run: |
+          gh release upload "$RELEASE_TAG" ${{ matrix.asset_glob }} dist/SHA256SUMS-${{ matrix.platform }}.txt --clobber
