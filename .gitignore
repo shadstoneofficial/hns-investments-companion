@@ -1,0 +1,11 @@
+node_modules/
+dist/
+out/
+.DS_Store
+npm-debug.log*
+
+# Local scanner output and private machine state
+scan-output/
+*.local.json
+*.local.md
+

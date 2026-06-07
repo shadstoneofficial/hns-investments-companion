@@ -1,0 +1,24 @@
+{
+  "name": "hns-investments-companion",
+  "version": "0.1.0",
+  "description": "HNS Investments companion app for read-only Bob LearnHNS portfolio discovery.",
+  "main": "src/main/main.js",
+  "private": false,
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "scan": "node scripts/smoke-scan.js",
+    "test": "node scripts/smoke-scan.js --json"
+  },
+  "keywords": [
+    "handshake",
+    "hns",
+    "bob-learnhns",
+    "electron",
+    "portfolio"
+  ],
+  "devDependencies": {
+    "electron": "^31.7.7"
+  }
+}
+

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HNS Investments</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">H</div>
+          <div>
+            <h1>HNS Investments</h1>
+            <p>Companion</p>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="Main">
+          <button class="nav-item active" type="button">Portfolio</button>
+          <button class="nav-item" type="button">Wallets</button>
+          <button class="nav-item" type="button">Attention</button>
+          <button class="nav-item" type="button">Exports</button>
+        </nav>
+      </aside>
+
+      <section class="workspace">
+        <header class="toolbar">
+          <div>
+            <p class="eyebrow">Bob LearnHNS</p>
+            <h2>Portfolio</h2>
+          </div>
+          <div class="toolbar-actions">
+            <input id="search" type="search" placeholder="Search names" autocomplete="off">
+            <button id="scanButton" class="primary-action" type="button">Scan</button>
+          </div>
+        </header>
+
+        <section class="stats-grid" aria-label="Portfolio summary">
+          <article class="stat">
+            <span class="stat-label">Names</span>
+            <strong id="nameCount">0</strong>
+          </article>
+          <article class="stat">
+            <span class="stat-label">HSD folders</span>
+            <strong id="hsdCount">0</strong>
+          </article>
+          <article class="stat">
+            <span class="stat-label">Wallet hints</span>
+            <strong id="walletHintCount">0</strong>
+          </article>
+          <article class="stat">
+            <span class="stat-label">Mode</span>
+            <strong id="scanMode">Idle</strong>
+          </article>
+        </section>
+
+        <section class="split-layout">
+          <div class="panel table-panel">
+            <div class="panel-header">
+              <h3>Names</h3>
+              <span id="lastScan">Not scanned</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Wallet</th>
+                  <th>Expires</th>
+                  <th>Tags</th>
+                </tr>
+              </thead>
+              <tbody id="namesTable">
+                <tr>
+                  <td colspan="5" class="empty-cell">Run a scan to start indexing Bob LearnHNS.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="panel details-panel">
+            <div class="panel-header">
+              <h3>Scan</h3>
+              <span id="scanState">Ready</span>
+            </div>
+            <div id="scanDetails" class="details-list"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>
+
