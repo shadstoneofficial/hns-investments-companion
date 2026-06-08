@@ -18,36 +18,77 @@
         </div>
 
         <nav class="nav-list" aria-label="Main">
-          <button class="nav-item active" type="button">Portfolio</button>
-          <button class="nav-item" type="button">Wallets</button>
-          <button class="nav-item" type="button">Attention</button>
-          <button class="nav-item" type="button">Exports</button>
+          <button class="nav-item active" type="button" data-view="dashboard">Dashboard</button>
+          <button class="nav-item" type="button" data-view="domains">Domains</button>
+          <button class="nav-item" type="button" data-view="coins">Coins</button>
+          <button class="nav-item" type="button" data-view="wallets">Wallets</button>
+          <button class="nav-item" type="button" data-view="attention">Attention</button>
+          <button class="nav-item" type="button" data-view="shakedex">Shakedex</button>
+          <button class="nav-item" type="button" data-view="applications">Applications</button>
+          <button class="nav-item" type="button" data-view="news">News</button>
+          <button class="nav-item" type="button" data-view="funding">Funding</button>
+          <button class="nav-item" type="button" data-view="scan">Scan</button>
+          <button class="nav-item" type="button" data-view="exports">Exports</button>
         </nav>
       </aside>
 
       <section class="workspace">
         <header class="toolbar">
           <div>
-            <p class="eyebrow">Bob LearnHNS</p>
-            <h2>Portfolio</h2>
+            <p id="viewEyebrow" class="eyebrow">Bob LearnHNS</p>
+            <h2 id="viewTitle">Domains</h2>
           </div>
-          <div class="toolbar-actions">
+          <div id="portfolioActions" class="toolbar-actions">
             <input id="search" type="search" placeholder="Search names" autocomplete="off">
-            <button id="scanButton" class="primary-action" type="button">Scan</button>
+            <select id="walletFilter" aria-label="Filter by wallet">
+              <option value="">All wallets</option>
+            </select>
+            <select id="lengthFilter" aria-label="Filter by name length">
+              <option value="">Any length</option>
+              <option value="1">1 char</option>
+              <option value="2">2 chars</option>
+              <option value="3">3 chars</option>
+              <option value="4">4 chars</option>
+              <option value="5">5 chars</option>
+              <option value="6-10">6-10 chars</option>
+              <option value="11+">11+ chars</option>
+            </select>
+            <select id="idnFilter" aria-label="Filter by IDN">
+              <option value="">IDN any</option>
+              <option value="yes">IDN yes</option>
+              <option value="no">IDN no</option>
+            </select>
+            <select id="emojiFilter" aria-label="Filter by emoji">
+              <option value="">Emoji any</option>
+              <option value="yes">Emoji yes</option>
+              <option value="no">Emoji no</option>
+            </select>
+            <select id="tagFilter" aria-label="Filter by tag">
+              <option value="">Any tag</option>
+              <option value="shakedex">Shakedex</option>
+              <option value="shakedex-listed">Listed</option>
+              <option value="shakedex-bought">Bought</option>
+              <option value="listing-only">Listing-only</option>
+              <option value="idn">IDN</option>
+              <option value="emoji">Emoji</option>
+            </select>
+          </div>
+          <div id="registryActions" class="toolbar-actions compact-actions" hidden>
+            <button id="refreshRegistryButton" class="secondary-action" type="button">Refresh Registry</button>
           </div>
         </header>
 
-        <section class="stats-grid" aria-label="Portfolio summary">
+        <section id="summaryStats" class="stats-grid" aria-label="Portfolio summary">
           <article class="stat">
             <span class="stat-label">Names</span>
             <strong id="nameCount">0</strong>
           </article>
           <article class="stat">
-            <span class="stat-label">HSD folders</span>
-            <strong id="hsdCount">0</strong>
+            <span class="stat-label">Current height</span>
+            <strong id="heightCount">0</strong>
           </article>
           <article class="stat">
-            <span class="stat-label">Wallet hints</span>
+            <span id="walletStatLabel" class="stat-label">Wallets</span>
             <strong id="walletHintCount">0</strong>
           </article>
           <article class="stat">
@@ -56,36 +97,414 @@
           </article>
         </section>
 
-        <section class="split-layout">
+        <section id="communityStats" class="stats-grid public-stats" aria-label="Community registry summary" hidden>
+          <article class="stat">
+            <span class="stat-label">Applications</span>
+            <strong id="registryAppCount">0</strong>
+          </article>
+          <article class="stat">
+            <span class="stat-label">News sources</span>
+            <strong id="registryNewsCount">0</strong>
+          </article>
+          <article class="stat">
+            <span class="stat-label">Funding</span>
+            <strong id="registryFundingCount">0</strong>
+          </article>
+          <article class="stat">
+            <span class="stat-label">Registry</span>
+            <strong id="registryStatus">Loading</strong>
+          </article>
+        </section>
+
+        <section id="dashboardView" class="view active">
+          <div class="dashboard-grid" aria-label="Dashboard">
+            <button class="dashboard-tile primary" type="button" data-target-view="domains">
+              <span>Bob LearnHNS</span>
+              <strong>Domains</strong>
+              <small id="dashboardDomains">0 names indexed</small>
+            </button>
+            <button class="dashboard-tile" type="button" data-target-view="coins">
+              <span>Portfolio</span>
+              <strong>Coins</strong>
+              <small id="dashboardCoins">Bridge needed</small>
+            </button>
+            <button class="dashboard-tile" type="button" data-target-view="wallets">
+              <span>Portfolio</span>
+              <strong>Wallets</strong>
+              <small id="dashboardWallets">0 wallets</small>
+            </button>
+            <button class="dashboard-tile" type="button" data-target-view="attention">
+              <span>Operations</span>
+              <strong>Attention</strong>
+              <small id="dashboardAttention">Renewals and IDNs</small>
+            </button>
+            <button class="dashboard-tile" type="button" data-target-view="shakedex">
+              <span>Marketplace</span>
+              <strong>Shakedex</strong>
+              <small id="dashboardShakedex">Bridge needed</small>
+            </button>
+            <button class="dashboard-tile public" type="button" data-target-view="applications">
+              <span>Community Registry</span>
+              <strong>Applications</strong>
+              <small id="dashboardApplications">Loading registry</small>
+            </button>
+            <button class="dashboard-tile public" type="button" data-target-view="news">
+              <span>Community Registry</span>
+              <strong>News</strong>
+              <small id="dashboardNews">Loading registry</small>
+            </button>
+            <button class="dashboard-tile public" type="button" data-target-view="funding">
+              <span>Community Registry</span>
+              <strong>Funding</strong>
+              <small id="dashboardFunding">Loading registry</small>
+            </button>
+            <button class="dashboard-tile" type="button" data-target-view="scan">
+              <span>Local Status</span>
+              <strong>Scan</strong>
+              <small id="dashboardScan">Ready</small>
+            </button>
+            <button class="dashboard-tile" type="button" data-target-view="exports">
+              <span>Local Files</span>
+              <strong>Exports</strong>
+              <small id="dashboardExports">0 names exportable</small>
+            </button>
+          </div>
+        </section>
+
+        <section id="domainsView" class="view">
           <div class="panel table-panel">
             <div class="panel-header">
               <h3>Names</h3>
               <span id="lastScan">Not scanned</span>
             </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th>Wallet</th>
-                  <th>Expires</th>
-                  <th>Tags</th>
-                </tr>
-              </thead>
-              <tbody id="namesTable">
-                <tr>
-                  <td colspan="5" class="empty-cell">Run a scan to start indexing Bob LearnHNS.</td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-scroll">
+              <table>
+                <colgroup>
+                  <col class="name-col">
+                  <col class="idn-col">
+                  <col class="status-col">
+                  <col class="wallet-col">
+                  <col class="expires-col">
+                  <col class="tags-col">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th><button class="sort-button active asc" type="button" data-sort="name">Name</button></th>
+                    <th><button class="sort-button" type="button" data-sort="unicodeName">Render</button></th>
+                    <th><button class="sort-button" type="button" data-sort="status">Status</button></th>
+                    <th><button class="sort-button" type="button" data-sort="wallet">Wallet</button></th>
+                    <th><button class="sort-button" type="button" data-sort="renewalHeight">Expires</button></th>
+                    <th>Tags</th>
+                  </tr>
+                </thead>
+                <tbody id="namesTable">
+                  <tr>
+                    <td colspan="6" class="empty-cell">Run a scan to start indexing Bob LearnHNS.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="coinsView" class="view">
+          <div class="panel table-panel">
+            <div class="panel-header">
+              <h3>Coins</h3>
+              <span id="coinsSummary">0 HNS spendable</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <colgroup>
+                  <col class="wallet-name-col">
+                  <col class="wallet-count-col">
+                  <col class="wallet-count-col">
+                  <col class="wallet-count-col">
+                  <col class="wallet-count-col">
+                  <col class="wallet-status-col">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="wallet">Wallet</button></th>
+                    <th><button class="coin-sort-button active desc" type="button" data-coin-sort="spendableHns">Spendable</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="confirmedHns">Confirmed</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="unconfirmedHns">Unconfirmed</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="lockedHns">Locked</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="status">Status</button></th>
+                  </tr>
+                </thead>
+                <tbody id="coinsTable">
+                  <tr>
+                    <td colspan="6" class="empty-cell">Run a bridge-enabled Bob LearnHNS build to show coin balances.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="scanView" class="view">
+          <div class="scan-layout">
+            <div class="panel details-panel">
+              <div class="panel-header">
+                <h3>Bridge Scan</h3>
+                <span id="scanState">Ready</span>
+              </div>
+              <div id="scanDetails" class="details-list"></div>
+            </div>
+
+            <div class="panel scan-command-panel">
+              <div class="panel-header">
+                <h3>Refresh</h3>
+                <span id="scanCount">0 names</span>
+              </div>
+              <div class="scan-command">
+                <button id="scanButton" class="primary-action" type="button">Scan</button>
+                <div class="scan-meta">
+                  <span>Last scan</span>
+                  <strong id="scanLastRun">Not scanned</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="shakedexView" class="view">
+          <div class="tab-strip" role="tablist" aria-label="Shakedex views">
+            <button class="subtab active" type="button" data-shakedex-tab="listings">My Listings</button>
+            <button class="subtab" type="button" data-shakedex-tab="fills">Fills</button>
+            <button class="subtab" type="button" data-shakedex-tab="marketplace">Marketplace</button>
+          </div>
+          <div class="shakedex-tab-panel active" data-shakedex-panel="listings">
+            <div class="panel table-panel">
+              <div class="panel-header">
+                <h3>My Listings</h3>
+                <span id="shakedexSummary">Bridge needed</span>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <colgroup>
+                    <col class="attention-name-col">
+                    <col class="attention-wallet-col">
+                    <col class="attention-status-col">
+                    <col class="attention-height-col">
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Wallet</th>
+                      <th>Stage</th>
+                      <th>Price</th>
+                    </tr>
+                  </thead>
+                  <tbody id="shakedexListingsTable">
+                    <tr>
+                      <td colspan="4" class="empty-cell">Run an updated Bob LearnHNS bridge to show Shakedex listings.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
-          <div class="panel details-panel">
-            <div class="panel-header">
-              <h3>Scan</h3>
-              <span id="scanState">Ready</span>
+          <div class="shakedex-tab-panel" data-shakedex-panel="fills">
+            <div class="panel table-panel">
+              <div class="panel-header">
+                <h3>Fills</h3>
+                <span id="shakedexFillsSummary">0 fills</span>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <colgroup>
+                    <col class="attention-name-col">
+                    <col class="attention-wallet-col">
+                    <col class="attention-status-col">
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Wallet</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="shakedexFillsTable">
+                    <tr>
+                      <td colspan="3" class="empty-cell">No fulfillments found yet.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div id="scanDetails" class="details-list"></div>
+          </div>
+
+          <div class="shakedex-tab-panel" data-shakedex-panel="marketplace">
+            <div class="panel table-panel">
+              <div class="panel-header">
+                <h3>Marketplace</h3>
+                <span>Coming soon</span>
+              </div>
+              <div class="placeholder-body">
+                Public Shakedex buyer discovery will live here after the local bridge screens are stable. Marketplace queries will be opt-in.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="walletsView" class="view placeholder-view">
+          <div class="panel table-panel">
+            <div class="panel-header">
+              <h3>Wallets</h3>
+              <span id="walletsSummary">0 wallets</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <colgroup>
+                  <col class="wallet-name-col">
+                  <col class="wallet-count-col">
+                  <col class="wallet-count-col">
+                  <col class="wallet-count-col">
+                  <col class="wallet-status-col">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Wallet</th>
+                    <th>Names</th>
+                    <th>IDNs</th>
+                    <th>Nearest</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="walletsTable">
+                  <tr>
+                    <td colspan="5" class="empty-cell">Run a scan to summarize wallets.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="applicationsView" class="view public-view">
+          <div class="panel table-panel">
+            <div class="panel-header">
+              <h3>Applications</h3>
+              <span id="applicationsSummary">Loading registry</span>
+            </div>
+            <div id="applicationsGrid" class="registry-grid">
+              <div class="empty-card">Loading Handshake applications from the community registry.</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="newsView" class="view public-view">
+          <div class="panel table-panel">
+            <div class="panel-header">
+              <h3>News Sources</h3>
+              <span id="newsSummary">Loading registry</span>
+            </div>
+            <div id="newsGrid" class="registry-grid">
+              <div class="empty-card">Loading Handshake news sources from the community registry.</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="fundingView" class="view public-view">
+          <div class="registry-split">
+            <div class="panel table-panel">
+              <div class="panel-header">
+                <h3>Funding Sources</h3>
+                <span id="fundingSourcesSummary">Loading registry</span>
+              </div>
+              <div id="fundingSourcesGrid" class="registry-grid">
+                <div class="empty-card">Loading funding sources from the community registry.</div>
+              </div>
+            </div>
+            <div class="panel table-panel">
+              <div class="panel-header">
+                <h3>Proposals</h3>
+                <span id="fundingProposalsSummary">Loading registry</span>
+              </div>
+              <div id="fundingProposalsGrid" class="registry-grid compact">
+                <div class="empty-card">Funding proposals will appear here when registry entries are added.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="attentionView" class="view placeholder-view">
+          <div class="attention-layout">
+            <div class="panel table-panel">
+              <div class="panel-header">
+                <h3>Nearest Renewal Heights</h3>
+                <span id="attentionSummary">0 names</span>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <colgroup>
+                    <col class="attention-name-col">
+                    <col class="attention-wallet-col">
+                    <col class="attention-height-col">
+                    <col class="attention-status-col">
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Wallet</th>
+                      <th>Height</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="attentionTable">
+                    <tr>
+                      <td colspan="4" class="empty-cell">Run a scan to build the attention queue.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel table-panel">
+              <div class="panel-header">
+                <h3>IDN Review</h3>
+                <span id="idnSummary">0 IDNs</span>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <colgroup>
+                    <col class="attention-name-col">
+                    <col class="attention-render-col">
+                    <col class="attention-wallet-col">
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Render</th>
+                      <th>Wallet</th>
+                    </tr>
+                  </thead>
+                  <tbody id="idnTable">
+                    <tr>
+                      <td colspan="3" class="empty-cell">No IDNs found yet.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="exportsView" class="view placeholder-view">
+          <div class="exports-layout">
+          <div class="panel export-panel">
+            <div class="panel-header">
+              <h3>Portfolio Export</h3>
+              <span id="exportSummary">0 names</span>
+            </div>
+            <div class="export-actions">
+              <button id="exportCsvButton" class="secondary-action" type="button">CSV</button>
+              <button id="exportJsonButton" class="secondary-action" type="button">JSON</button>
+            </div>
+          </div>
           </div>
         </section>
       </section>
@@ -94,4 +513,3 @@
     <script src="./renderer.js"></script>
   </body>
 </html>
-

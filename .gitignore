@@ -1,6 +1,7 @@
 node_modules/
 dist/
 out/
+test/
 .DS_Store
 npm-debug.log*
 
@@ -9,3 +10,14 @@ scan-output/
 *.local.json
 *.local.md
 
+# Release artifacts and signing/notarization scratch
+*.app
+*.dmg
+*.zip
+*.msi
+*.AppImage
+*.blockmap
+*.p12
+*.p8
+*.keychain
+notary/

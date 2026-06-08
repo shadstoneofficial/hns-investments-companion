@@ -13,25 +13,29 @@ Bob LearnHNS already has a read path for owned names:
 
 This strongly suggests HNS Investments should integrate through a Bob LearnHNS API or helper process modeled on `Wallet.getNames`, rather than scraping wallet databases directly.
 
-## MVP App Behavior
+## Current App Behavior
 
-The current HNS Investments scanner only performs filesystem metadata discovery:
+The current HNS Investments scanner performs filesystem metadata discovery and then prefers the Bob LearnHNS read-only bridge when available:
 
 - detects the Bob LearnHNS app support folder;
 - detects candidate `hsd_data` folders;
 - detects wallet storage directories as metadata-only hints;
-- marks wallets as detected but not enumerated.
+- reads owned names from the bridge-backed `Wallet.getNames` path;
+- reads Shakedex listing/fill summaries from Bob LearnHNS;
+- reads aggregate per-wallet HNS balances from Bob LearnHNS balance APIs.
 
-It intentionally does not read raw wallet DB records or request wallet secrets.
+It intentionally does not read raw wallet DB records, request wallet secrets, expose raw UTXOs, sign transactions, or write to Bob LearnHNS.
 
 ## Next Implementation Path
 
-Preferred next step:
+Implemented bridge shape:
 
-1. Add a Bob LearnHNS read-only export/API surface that returns the same safe name data used by Domain Manager.
-2. Include wallet id, account, name state, owner outpoint, renewal height, and expiration fields.
-3. Have HNS Investments call that read-only surface for unlocked wallets.
-4. Show locked/encrypted wallets as detected but unreadable.
+1. Bob LearnHNS publishes a local manifest in app support with `baseUrl` and a random bearer token.
+2. HNS Investments calls the bridge only when the manifest is present and the token works.
+3. `/portfolio` returns the same safe name data used by Bob's Domain Manager path.
+4. `/shakedex` returns local listing and fill summaries.
+5. `/coins` returns per-wallet HNS balance summaries without raw coin/address detail.
+6. HNS Investments falls back to discovery mode when the bridge is unavailable.
 
 Avoid:
 
@@ -39,4 +43,3 @@ Avoid:
 - reading or displaying API keys;
 - unlocking wallets from HNS Investments in the first real portfolio build;
 - sending detected names to public-chain APIs without opt-in.
-

@@ -1,6 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
+const { fetchBobBridgeCoins, fetchBobBridgePortfolio, fetchBobBridgeShakedex } = require('./bobBridgeClient');
 
 const SUPPORTED_APP_NAME = 'Bob LearnHNS';
 const UNSUPPORTED_BOB_FOLDERS = [
@@ -141,6 +142,47 @@ async function findWalletStorageHints(hsdDir) {
   return hints;
 }
 
+function listingPriceHns(listing) {
+  return listing.priceHns || listing.startPriceHns || listing.endPriceHns || '';
+}
+
+function mergeNamesWithShakedexInventory(names, listings, fulfillments) {
+  const rows = [...names];
+  const namesByAscii = new Set(names.map((name) => name.name));
+  const fulfillmentNames = new Set((fulfillments || []).map((fulfillment) => fulfillment.name).filter(Boolean));
+
+  for (const listing of listings || []) {
+    if (!listing.name || namesByAscii.has(listing.name)) continue;
+    if (fulfillmentNames.has(listing.name)) continue;
+
+    rows.push({
+      name: listing.name,
+      unicodeName: listing.unicodeName || listing.name,
+      isIdn: !!listing.isIdn,
+      status: `shakedex ${listing.stage || 'listing'}`,
+      wallet: listing.wallet || 'Bob LearnHNS',
+      expires: '',
+      renewalHeight: '',
+      transferHeight: '',
+      hnsPaid: '',
+      ownerHash: '',
+      ownerIndex: '',
+      tags: [
+        'shakedex',
+        'shakedex-listed',
+        'listing-only',
+        listing.stage || '',
+        listingPriceHns(listing) ? `${listingPriceHns(listing)} HNS` : ''
+      ].filter(Boolean),
+      source: {
+        type: 'bob-learnhns-shakedex-listing'
+      }
+    });
+  }
+
+  return rows;
+}
+
 async function scanBobLearnHns() {
   const root = appSupportRoot();
   const appPath = path.join(root, SUPPORTED_APP_NAME);
@@ -158,13 +200,44 @@ async function scanBobLearnHns() {
   }
 
   const readableHsdDirs = hsdDataDirs.filter((dir) => dir.readable);
-  const encryptedOrLockedWallets = readableHsdDirs.length > 0
+  const bridge = await fetchBobBridgePortfolio().catch((error) => ({
+    ok: false,
+    status: error.name === 'AbortError' ? 'bridge-timeout' : error.message,
+    names: [],
+    wallets: []
+  }));
+  const shakedex = bridge.ok
+    ? await fetchBobBridgeShakedex()
+    : {
+        ok: false,
+        status: bridge.status,
+        listings: [],
+        fulfillments: []
+      };
+  const coins = bridge.ok
+    ? await fetchBobBridgeCoins()
+    : {
+        ok: false,
+        status: bridge.status,
+        wallets: []
+      };
+
+  const encryptedOrLockedWallets = readableHsdDirs.length > 0 && !bridge.ok
     ? [{
         label: 'Bob LearnHNS wallets',
         status: 'detected-not-enumerated',
-        reason: 'Name enumeration is not enabled until a safe Bob LearnHNS API path is implemented.'
+        reason: 'Automatic enumeration needs a running Bob LearnHNS build with the HNS Investments read-only bridge.'
       }]
     : [];
+  const bridgeNames = bridge.ok ? bridge.names : [];
+  const shakedexListings = shakedex.listings || [];
+  const shakedexFulfillments = shakedex.fulfillments || [];
+  const names = bridge.ok
+    ? mergeNamesWithShakedexInventory(bridgeNames, shakedexListings, shakedexFulfillments)
+    : [];
+  const bridgeNeedsBuild = bridge.status === 'bridge-manifest-not-found';
+  const bridgeNeedsBobReady = typeof bridge.status === 'string'
+    && bridge.status.includes('HTTP 503');
 
   return {
     scannerVersion: 1,
@@ -176,8 +249,31 @@ async function scanBobLearnHns() {
     },
     unsupportedFolders,
     hsdDataDirs,
+    bridge: {
+      ok: !!bridge.ok,
+      status: bridge.status,
+      manifestPath: bridge.manifestPath || null,
+      network: bridge.network || null,
+      height: bridge.height || 0,
+      walletCount: bridge.wallets ? bridge.wallets.length : 0,
+      wallets: bridge.wallets || []
+    },
+    shakedex: {
+      ok: !!shakedex.ok,
+      status: shakedex.status,
+      listingCount: shakedex.listings ? shakedex.listings.length : 0,
+      fulfillmentCount: shakedex.fulfillments ? shakedex.fulfillments.length : 0,
+      listings: shakedex.listings || [],
+      fulfillments: shakedex.fulfillments || []
+    },
+    coins: {
+      ok: !!coins.ok,
+      status: coins.status,
+      walletCount: coins.wallets ? coins.wallets.length : 0,
+      wallets: coins.wallets || []
+    },
     encryptedOrLockedWallets,
-    names: [],
+    names,
     summary: {
       supportedAppDetected: appSummary.exists,
       hsdDataDirCount: hsdDataDirs.length,
@@ -185,12 +281,20 @@ async function scanBobLearnHns() {
         (total, dir) => total + (dir.walletStorageHints ? dir.walletStorageHints.length : 0),
         0
       ),
-      indexedNameCount: 0,
-      mode: 'read-only-filesystem-discovery',
-      modeLabel: 'Discovery',
-      nextStep: appSummary.exists
-        ? 'Bob LearnHNS detected. Connect the read-only Wallet.getNames path to populate portfolio rows.'
-        : 'Install or open Bob LearnHNS to begin local discovery.'
+      indexedNameCount: names.length,
+      ownedNameCount: bridgeNames.length,
+      shakedexListingOnlyCount: names.length - bridgeNames.length,
+      mode: bridge.ok ? 'bob-learnhns-read-only-bridge' : 'read-only-filesystem-discovery',
+      modeLabel: bridge.ok ? 'Bridge' : 'Discovery',
+      nextStep: bridge.ok
+        ? 'Bob LearnHNS read-only bridge connected.'
+        : bridgeNeedsBuild
+          ? 'The running Bob LearnHNS app does not include the HNS Investments bridge yet. Refresh will not populate names until a bridge-enabled Bob build is running.'
+          : bridgeNeedsBobReady
+            ? 'Bridge found, but Bob LearnHNS wallet service is not ready. Unlock/load Bob, then click Scan again.'
+            : appSummary.exists
+          ? 'Install or run a Bob LearnHNS build with the HNS Investments read-only bridge to populate portfolio rows.'
+          : 'Install or open Bob LearnHNS to begin local discovery.'
     }
   };
 }

@@ -3,15 +3,26 @@
   "version": "0.1.0",
   "description": "HNS Investments companion app for read-only Bob LearnHNS portfolio discovery.",
   "main": "src/main/main.js",
+  "author": "HNS Investments",
   "private": false,
   "license": "MIT",
+  "homepage": "https://hnsinvestments.com/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shadstoneofficial/hns-investments-companion.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shadstoneofficial/hns-investments-companion/issues"
+  },
   "scripts": {
     "start": "electron .",
-    "scan": "node scripts/smoke-scan.js",
-    "test": "node scripts/smoke-scan.js --json",
+    "generate-icons": "bash scripts/generate-icons.sh",
+    "package-mac": "electron-builder --mac --publish never",
     "package-mac-notarized": "bash scripts/build-notarized-macos.sh",
     "package-win": "electron-builder --win nsis --x64 --publish=never",
-    "package-linux": "electron-builder --linux AppImage --x64 --publish=never"
+    "package-linux": "electron-builder --linux AppImage --x64 --publish=never",
+    "scan": "node scripts/smoke-scan.js",
+    "test": "node scripts/smoke-scan.js --json"
   },
   "keywords": [
     "handshake",
@@ -33,17 +44,23 @@
     },
     "files": [
       "src/**/*",
+      "assets/**/*",
+      "resources/**/*",
       "package.json"
     ],
     "mac": {
       "category": "public.app-category.finance",
+      "icon": "assets/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
+      "entitlements": "resources/entitlements.mac.plist",
+      "entitlementsInherit": "resources/entitlements.mac.inherit.plist",
       "target": [
         "dir"
       ]
     },
     "win": {
+      "icon": "assets/icon.png",
       "target": [
         {
           "target": "nsis",
@@ -55,6 +72,7 @@
     },
     "linux": {
       "category": "Finance",
+      "icon": "assets/icon.png",
       "target": [
         {
           "target": "AppImage",

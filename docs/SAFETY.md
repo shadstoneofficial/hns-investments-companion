@@ -7,8 +7,10 @@ HNS Investments Companion starts read-only because Bob LearnHNS contains wallet 
 - The app may read filesystem metadata inside the Bob LearnHNS app support folder.
 - The app may detect candidate `hsd_data` folders.
 - The app may report that wallet data exists but is locked, encrypted, unsupported, or not yet enumerable.
+- The app may read names, Shakedex summaries, and HNS-only wallet balance summaries from the Bob LearnHNS read-only bridge.
 - The app must not write to Bob LearnHNS folders.
 - The app must not display or export API keys, wallet tokens, seeds, mnemonics, private keys, or raw wallet database contents.
+- The app must not expose raw UTXOs, raw wallet database records, addresses, or transaction graph data in the first balance bridge.
 - The app must not send portfolio data to public APIs in the MVP.
 
 ## Locked Or Encrypted Wallets
@@ -28,4 +30,3 @@ Other local Bob-family folders may be detected so the user understands why they 
 Public-chain verification means checking a detected name against an external chain source or hosted indexer. That can leak which names are in a user's local portfolio.
 
 For that reason, public-chain verification is not part of the first scanner. It should be opt-in and clearly labeled before any names leave the machine.
-
