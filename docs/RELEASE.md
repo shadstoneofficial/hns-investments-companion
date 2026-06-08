@@ -4,12 +4,12 @@ HNS Investments releases are public. Keep wallet data, local scan output, bridge
 
 ## Version
 
-Current planned release: `v0.1.0`
+Current planned release: `v0.1.1`
 
 Expected macOS release assets:
 
-- `HNS-Investments-0.1.0-arm64.dmg`
-- `HNS-Investments-0.1.0-x64.dmg`
+- `HNS-Investments-0.1.1-arm64.dmg`
+- `HNS-Investments-0.1.1-x64.dmg`
 - `SHA256SUMS.txt`
 
 ## Mike Machine Prep
@@ -57,11 +57,11 @@ Run on Janice's machine after packaging:
 codesign --verify --deep --strict --verbose=2 "dist/mac-arm64/HNS Investments.app"
 xcrun stapler validate "dist/mac-arm64/HNS Investments.app"
 spctl --assess --type execute --verbose "dist/mac-arm64/HNS Investments.app"
-codesign --verify --verbose=2 "dist/HNS-Investments-0.1.0-arm64.dmg"
-xcrun stapler validate "dist/HNS-Investments-0.1.0-arm64.dmg"
-spctl --assess --type open --context context:primary-signature --verbose "dist/HNS-Investments-0.1.0-arm64.dmg"
-hdiutil verify "dist/HNS-Investments-0.1.0-arm64.dmg"
-(cd dist && shasum -a 256 HNS-Investments-0.1.0-*.dmg > SHA256SUMS.txt)
+codesign --verify --verbose=2 "dist/HNS-Investments-0.1.1-arm64.dmg"
+xcrun stapler validate "dist/HNS-Investments-0.1.1-arm64.dmg"
+spctl --assess --type open --context context:primary-signature --verbose "dist/HNS-Investments-0.1.1-arm64.dmg"
+hdiutil verify "dist/HNS-Investments-0.1.1-arm64.dmg"
+(cd dist && shasum -a 256 HNS-Investments-0.1.1-*.dmg > SHA256SUMS.txt)
 cat dist/SHA256SUMS.txt
 ```
 
@@ -72,20 +72,20 @@ Repeat app and DMG verification for x64 before publishing if x64 is included.
 Create a prerelease only after both DMGs are signed, notarized, stapled, verified, and checksummed.
 
 ```bash
-gh release create v0.1.0 \
-  dist/HNS-Investments-0.1.0-arm64.dmg \
-  dist/HNS-Investments-0.1.0-x64.dmg \
+gh release create v0.1.1 \
+  dist/HNS-Investments-0.1.1-arm64.dmg \
+  dist/HNS-Investments-0.1.1-x64.dmg \
   dist/SHA256SUMS.txt \
   --repo shadstoneofficial/hns-investments-companion \
-  --title "HNS Investments v0.1.0" \
+  --title "HNS Investments v0.1.1" \
   --prerelease \
-  --notes-file docs/RELEASE_NOTES_v0.1.0.md
+  --notes-file docs/RELEASE_NOTES_v0.1.1.md
 ```
 
 Verify:
 
 ```bash
-gh release view v0.1.0 --repo shadstoneofficial/hns-investments-companion --json tagName,targetCommitish,isPrerelease,url,assets
+gh release view v0.1.1 --repo shadstoneofficial/hns-investments-companion --json tagName,targetCommitish,isPrerelease,url,assets
 ```
 
 ## Do Not Publish If
