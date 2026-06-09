@@ -67,6 +67,8 @@ const fundingProposalsGrid = document.getElementById('fundingProposalsGrid');
 const exportSummary = document.getElementById('exportSummary');
 const exportCsvButton = document.getElementById('exportCsvButton');
 const exportJsonButton = document.getElementById('exportJsonButton');
+const exportOwnedCsvButton = document.getElementById('exportOwnedCsvButton');
+const exportShakedexCsvButton = document.getElementById('exportShakedexCsvButton');
 const dashboardTiles = Array.from(document.querySelectorAll('.dashboard-tile'));
 const views = {
   dashboard: document.getElementById('dashboardView'),
@@ -904,11 +906,17 @@ function renderCoins(result) {
   }
 }
 
-function exportRows(result) {
+function exportRows(result, scope = 'all') {
   const listingsByName = shakedexListingMap(result);
   const fulfillmentsByName = shakedexFulfillmentMap(result);
 
-  return (result.names || []).map((name) => ({
+  return (result.names || []).filter((name) => {
+    const listing = listingsByName.get(name.name);
+    const fulfillment = fulfillmentsByName.get(name.name);
+    if (scope === 'owned') return !name.shakedexListingOnly;
+    if (scope === 'shakedex') return !!listing || !!fulfillment || !!name.shakedexListingOnly;
+    return true;
+  }).map((name) => ({
     ...(() => {
       const listing = listingsByName.get(name.name);
       const fulfillment = fulfillmentsByName.get(name.name);
@@ -916,7 +924,8 @@ function exportRows(result) {
         shakedexListed: listing && !fulfillment ? 'yes' : '',
         shakedexBought: fulfillment ? 'yes' : '',
         shakedexStage: fulfillment ? 'bought' : listing?.stage || '',
-        shakedexPriceHns: listing && !fulfillment ? shakedexPriceLabel(listing).replace(' HNS', '') : ''
+        shakedexPriceHns: listing && !fulfillment ? shakedexPriceLabel(listing).replace(' HNS', '') : '',
+        shakedexListingOnly: name.shakedexListingOnly ? 'yes' : ''
       };
     })(),
     name: name.name,
@@ -949,21 +958,27 @@ function downloadFile(filename, type, content) {
 }
 
 function renderExports(result) {
-  const count = result.names ? result.names.length : 0;
-  setText(exportSummary, `${count} names`);
+  const names = result.names || [];
+  const ownedCount = names.filter((name) => !name.shakedexListingOnly).length;
+  const shakedexCount = exportRows(result, 'shakedex').length;
+  const count = names.length;
+  setText(exportSummary, `${count} indexed · ${ownedCount} Bob-owned · ${shakedexCount} Shakedex`);
   exportCsvButton.disabled = count === 0;
   exportJsonButton.disabled = count === 0;
+  exportOwnedCsvButton.disabled = ownedCount === 0;
+  exportShakedexCsvButton.disabled = shakedexCount === 0;
 }
 
-function exportCsv() {
+function exportCsv(scope = 'all') {
   if (!currentResult) return;
 
-  const rows = exportRows(currentResult);
+  const rows = exportRows(currentResult, scope);
   const fields = Object.keys(rows[0] || {
     shakedexListed: '',
     shakedexBought: '',
     shakedexStage: '',
     shakedexPriceHns: '',
+    shakedexListingOnly: '',
     name: '',
     render: '',
     status: '',
@@ -979,7 +994,8 @@ function exportCsv() {
     ...rows.map((row) => fields.map((field) => csvEscape(row[field])).join(','))
   ].join('\n');
 
-  downloadFile(`hns-investments-${Date.now()}.csv`, 'text/csv;charset=utf-8', csv);
+  const suffix = scope === 'all' ? 'all-indexed' : scope;
+  downloadFile(`hns-investments-${suffix}-${Date.now()}.csv`, 'text/csv;charset=utf-8', csv);
 }
 
 function exportJson() {
@@ -991,7 +1007,7 @@ function exportJson() {
     JSON.stringify({
       scannedAt: currentResult.scannedAt,
       bridge: currentResult.bridge,
-      names: exportRows(currentResult)
+      names: exportRows(currentResult, 'all')
     }, null, 2)
   );
 }
@@ -1277,8 +1293,10 @@ for (const tab of shakedexTabs) {
     showShakedexTab(tab.dataset.shakedexTab || 'listings');
   });
 }
-exportCsvButton.addEventListener('click', exportCsv);
+exportCsvButton.addEventListener('click', () => exportCsv('all'));
 exportJsonButton.addEventListener('click', exportJson);
+exportOwnedCsvButton.addEventListener('click', () => exportCsv('owned'));
+exportShakedexCsvButton.addEventListener('click', () => exportCsv('shakedex'));
 refreshRegistryButton.addEventListener('click', loadRegistry);
 registrySourceButton.addEventListener('click', () => {
   const url = registrySourceUrls[activeView] || communityRegistry?.dataUrl || REGISTRY_DATA_URL;
