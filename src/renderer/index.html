@@ -74,6 +74,8 @@
             </select>
           </div>
           <div id="registryActions" class="toolbar-actions compact-actions" hidden>
+            <button id="registrySourceButton" class="secondary-action" type="button">Registry Source</button>
+            <button id="registryHowButton" class="secondary-action" type="button">How to Submit</button>
             <button id="refreshRegistryButton" class="secondary-action" type="button">Refresh Registry</button>
           </div>
         </header>
@@ -117,6 +119,10 @@
         </section>
 
         <section id="dashboardView" class="view active">
+          <div class="source-note">
+            <strong>Community data source</strong>
+            <span>Applications, news, and funding are pulled from the open HNS Community Registry. Use Registry Source to inspect the data or How to Submit to contribute.</span>
+          </div>
           <div class="dashboard-grid" aria-label="Dashboard">
             <button class="dashboard-tile primary" type="button" data-target-view="domains">
               <span>Bob LearnHNS</span>

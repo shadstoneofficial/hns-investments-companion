@@ -38,6 +38,8 @@ const navItems = Array.from(document.querySelectorAll('.nav-item'));
 const portfolioActions = document.getElementById('portfolioActions');
 const registryActions = document.getElementById('registryActions');
 const refreshRegistryButton = document.getElementById('refreshRegistryButton');
+const registrySourceButton = document.getElementById('registrySourceButton');
+const registryHowButton = document.getElementById('registryHowButton');
 const viewEyebrow = document.getElementById('viewEyebrow');
 const viewTitle = document.getElementById('viewTitle');
 const coinsSummary = document.getElementById('coinsSummary');
@@ -94,6 +96,8 @@ const viewLabels = {
 };
 const publicViews = new Set(['applications', 'news', 'funding']);
 const dashboardViews = new Set(['dashboard']);
+const REGISTRY_REPO_URL = 'https://github.com/shadstoneofficial/hns-community-registry';
+const REGISTRY_HOW_TO_SUBMIT_URL = 'https://hnsinvestments.com/sources/';
 
 const SETTINGS_KEY = 'hnsInvestments.uiState.v1';
 
@@ -643,6 +647,7 @@ function linkButtons(entry, options = {}) {
     entry.hnsUrl ? { label: 'HNS', url: entry.hnsUrl } : null,
     entry.repository ? { label: 'Repo', url: entry.repository } : null,
     entry.feedUrl ? { label: 'Feed', url: entry.feedUrl } : null,
+    entry.registrySourceUrl ? { label: 'Registry', url: entry.registrySourceUrl } : null,
     entry.sourceUrl ? { label: 'Source', url: entry.sourceUrl } : null,
     entry.projectUrl ? { label: 'Project', url: entry.projectUrl } : null,
     entry.pledgeSourceUrl ? { label: 'Pledges', url: entry.pledgeSourceUrl } : null
@@ -718,6 +723,7 @@ function registryCard(entry, meta = {}) {
   facts.className = 'registry-facts';
   const factValues = [
     entry.sourceName ? `Source: ${entry.sourceName}` : '',
+    entry.registrySourceUrl ? 'Registry: hns-community-registry' : '',
     entry.publishedAt ? `Published: ${new Date(entry.publishedAt).toLocaleDateString()}` : '',
     entry.platforms?.length ? `Platforms: ${entry.platforms.join(', ')}` : '',
     entry.tags?.length ? `Tags: ${entry.tags.slice(0, 5).join(', ')}` : '',
@@ -1259,6 +1265,13 @@ for (const tab of shakedexTabs) {
 exportCsvButton.addEventListener('click', exportCsv);
 exportJsonButton.addEventListener('click', exportJson);
 refreshRegistryButton.addEventListener('click', loadRegistry);
+registrySourceButton.addEventListener('click', () => {
+  const url = communityRegistry?.dataUrl || communityRegistry?.repoUrl || REGISTRY_REPO_URL;
+  window.hnsInvestments.openExternal(url);
+});
+registryHowButton.addEventListener('click', () => {
+  window.hnsInvestments.openExternal(REGISTRY_HOW_TO_SUBMIT_URL);
+});
 applySettings();
 updateSortButtons();
 updateCoinSortButtons();

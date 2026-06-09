@@ -1,4 +1,6 @@
 const REGISTRY_BASE_URL = 'https://raw.githubusercontent.com/shadstoneofficial/hns-community-registry/main/data';
+const REGISTRY_REPO_URL = 'https://github.com/shadstoneofficial/hns-community-registry';
+const REGISTRY_DATA_URL = `${REGISTRY_REPO_URL}/tree/main/data`;
 
 const registryFiles = {
   apps: 'apps.json',
@@ -165,13 +167,20 @@ async function loadCommunityRegistry() {
     fundingSources: [],
     fundingProposals: [],
     newsItems: [],
-    errors: []
+    errors: [],
+    repoUrl: REGISTRY_REPO_URL,
+    dataUrl: REGISTRY_DATA_URL
   };
 
   for (const [key, fileName] of Object.entries(registryFiles)) {
     try {
       const data = await fetchRegistryFile(fileName);
-      result[key] = Array.isArray(data.entries) ? data.entries : [];
+      result[key] = Array.isArray(data.entries)
+        ? data.entries.map((entry) => ({
+          ...entry,
+          registrySourceUrl: `${REGISTRY_REPO_URL}/blob/main/data/${fileName}`
+        }))
+        : [];
     } catch (error) {
       result.ok = false;
       result.status = 'partial';
