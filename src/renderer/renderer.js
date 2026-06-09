@@ -97,7 +97,20 @@ const viewLabels = {
 const publicViews = new Set(['applications', 'news', 'funding']);
 const dashboardViews = new Set(['dashboard']);
 const REGISTRY_REPO_URL = 'https://github.com/shadstoneofficial/hns-community-registry';
+const REGISTRY_DATA_URL = `${REGISTRY_REPO_URL}/tree/main/data`;
 const REGISTRY_HOW_TO_SUBMIT_URL = 'https://hnsinvestments.com/sources/';
+const registrySourceUrls = {
+  applications: `${REGISTRY_REPO_URL}/blob/main/data/apps.json`,
+  news: `${REGISTRY_REPO_URL}/blob/main/data/news-sources.json`,
+  funding: `${REGISTRY_REPO_URL}/blob/main/data/funding-sources.json`,
+  dashboard: REGISTRY_DATA_URL
+};
+const registrySourceLabels = {
+  applications: 'apps.json',
+  news: 'news-sources.json',
+  funding: 'funding-sources.json',
+  dashboard: 'Registry Data'
+};
 
 const SETTINGS_KEY = 'hnsInvestments.uiState.v1';
 
@@ -201,6 +214,8 @@ function showView(viewName) {
   registryActions.hidden = !(publicViews.has(viewName) || dashboardViews.has(viewName));
   summaryStats.hidden = publicViews.has(viewName) || dashboardViews.has(viewName);
   communityStats.hidden = !publicViews.has(viewName);
+  registrySourceButton.textContent = registrySourceLabels[viewName] || 'Registry Source';
+  registrySourceButton.title = registrySourceUrls[viewName] || REGISTRY_DATA_URL;
   saveSettings();
 }
 
@@ -1266,7 +1281,7 @@ exportCsvButton.addEventListener('click', exportCsv);
 exportJsonButton.addEventListener('click', exportJson);
 refreshRegistryButton.addEventListener('click', loadRegistry);
 registrySourceButton.addEventListener('click', () => {
-  const url = communityRegistry?.dataUrl || communityRegistry?.repoUrl || REGISTRY_REPO_URL;
+  const url = registrySourceUrls[activeView] || communityRegistry?.dataUrl || REGISTRY_DATA_URL;
   window.hnsInvestments.openExternal(url);
 });
 registryHowButton.addEventListener('click', () => {
