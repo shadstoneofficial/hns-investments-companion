@@ -217,34 +217,62 @@
           <div class="panel table-panel">
             <div class="panel-header">
               <h3>Coins</h3>
-              <span id="coinsSummary">0 HNS spendable</span>
+              <span id="coinsSummary">0 HNS free confirmed</span>
             </div>
             <div class="table-scroll">
               <table>
                 <colgroup>
-                  <col class="wallet-name-col">
-                  <col class="wallet-count-col">
-                  <col class="wallet-count-col">
-                  <col class="wallet-count-col">
-                  <col class="wallet-count-col">
-                  <col class="wallet-status-col">
+                  <col class="coin-wallet-col">
+                  <col class="coin-amount-col">
+                  <col class="coin-amount-col">
+                  <col class="coin-amount-col">
+                  <col class="coin-amount-col">
+                  <col class="coin-amount-col">
+                  <col class="coin-status-col">
                 </colgroup>
                 <thead>
                   <tr>
-                    <th><button class="coin-sort-button" type="button" data-coin-sort="wallet">Wallet</button></th>
-                    <th><button class="coin-sort-button active desc" type="button" data-coin-sort="spendableHns">Spendable</button></th>
-                    <th><button class="coin-sort-button" type="button" data-coin-sort="confirmedHns">Confirmed</button></th>
-                    <th><button class="coin-sort-button" type="button" data-coin-sort="unconfirmedHns">Unconfirmed</button></th>
-                    <th><button class="coin-sort-button" type="button" data-coin-sort="lockedHns">Locked</button></th>
-                    <th><button class="coin-sort-button" type="button" data-coin-sort="status">Status</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="wallet" title="Bob LearnHNS wallet label.">Wallet</button></th>
+                    <th><button class="coin-sort-button active desc" type="button" data-coin-sort="freeConfirmedHns" title="Confirmed HNS minus confirmed locked HNS. This is the conservative spreadsheet-style number.">Free confirmed</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="spendableHns" title="Bob/hsd spendable estimate. This can include mempool state and may be higher than conservative free confirmed HNS.">Estimated spendable</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="confirmedHns" title="Total confirmed wallet balance reported by Bob/hsd. May include confirmed locked covenant or auction-related coins.">Confirmed</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="unconfirmedHns" title="Wallet balance with mempool effects reported by Bob/hsd. Not simply pending incoming HNS.">Unconfirmed</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="lockedHns" title="Confirmed plus unconfirmed HNS Bob/hsd marks as locked by auctions, covenants, listings, or pending operations.">Locked</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="status" title="Quick warning label derived from encryption, watch-only, locked, or unconfirmed wallet state.">Status</button></th>
                   </tr>
                 </thead>
                 <tbody id="coinsTable">
                   <tr>
-                    <td colspan="6" class="empty-cell">Run a bridge-enabled Bob LearnHNS build to show coin balances.</td>
+                    <td colspan="7" class="empty-cell">Run a bridge-enabled Bob LearnHNS build to show coin balances.</td>
                   </tr>
                 </tbody>
               </table>
+              <div class="coin-definitions" aria-label="Coin balance definitions">
+                <div>
+                  <strong>Free confirmed</strong>
+                  <span>Confirmed minus confirmed locked. This is the most conservative number for manual reconciliation.</span>
+                </div>
+                <div>
+                  <strong>Estimated spendable</strong>
+                  <span>Bob/hsd max-send style estimate. It can include mempool state and may be higher than free confirmed.</span>
+                </div>
+                <div>
+                  <strong>Confirmed</strong>
+                  <span>Total confirmed wallet balance reported by Bob/hsd, including coins that may not be freely spendable.</span>
+                </div>
+                <div>
+                  <strong>Unconfirmed</strong>
+                  <span>Balance with unconfirmed transaction effects. This is not only incoming pending HNS.</span>
+                </div>
+                <div>
+                  <strong>Locked</strong>
+                  <span>HNS tied up by auctions, covenants, listings, pending operations, or wallet locks.</span>
+                </div>
+                <div>
+                  <strong>Status</strong>
+                  <span>Simple warning: encrypted, watch-only, locked, unconfirmed, or ready.</span>
+                </div>
+              </div>
             </div>
           </div>
         </section>

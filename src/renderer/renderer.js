@@ -124,7 +124,7 @@ let sortState = {
   direction: 'asc'
 };
 let coinSortState = {
-  key: 'spendableHns',
+  key: 'freeConfirmedHns',
   direction: 'desc'
 };
 let activeShakedexTab = 'listings';
@@ -428,6 +428,14 @@ function formatHns(value) {
   });
 }
 
+function lockedHns(wallet) {
+  return Number(wallet.lockedConfirmedHns || 0) + Number(wallet.lockedUnconfirmedHns || 0);
+}
+
+function freeConfirmedHns(wallet) {
+  return Math.max(Number(wallet.confirmedHns || 0) - Number(wallet.lockedConfirmedHns || 0), 0);
+}
+
 function nameLength(name) {
   const rendered = renderedNameLabel(name);
   return Array.from(rendered || name.name || '').length;
@@ -476,7 +484,7 @@ function walletRows(result) {
       coinStatus: '',
       status: wallet.encrypted ? 'encrypted' : wallet.watchOnly ? 'watch-only' : 'ready'
     };
-    const locked = Number(wallet.lockedConfirmedHns || 0) + Number(wallet.lockedUnconfirmedHns || 0);
+    const locked = lockedHns(wallet);
     const unconfirmedDelta = Number(wallet.unconfirmedHns || 0) - Number(wallet.confirmedHns || 0);
     row.coinStatus = locked > 0 ? 'locked hns' : unconfirmedDelta !== 0 ? 'unconfirmed hns' : '';
     rowsByWallet.set(label, row);
@@ -630,7 +638,7 @@ function updatePortfolioDashboard(result) {
   const names = result.names || [];
   const coins = result.coins || {};
   const coinWallets = coins.wallets || [];
-  const totalSpendable = coinWallets.reduce((total, wallet) => total + Number(wallet.spendableHns || 0), 0);
+  const totalFreeConfirmed = coinWallets.reduce((total, wallet) => total + freeConfirmedHns(wallet), 0);
   const walletCount = result.bridge?.ok ? result.bridge.walletCount : result.summary?.walletStorageHintCount || 0;
   const shakedex = result.shakedex || {};
   const listings = shakedex.listingCount || shakedex.listings?.length || 0;
@@ -639,7 +647,7 @@ function updatePortfolioDashboard(result) {
   const idnCount = names.filter((name) => name.isIdn).length;
 
   setText(dashboardDomains, `${names.length} names indexed`);
-  setText(dashboardCoins, coins.ok ? `${formatHns(totalSpendable)} HNS spendable` : coins.status || 'Bridge needed');
+  setText(dashboardCoins, coins.ok ? `${formatHns(totalFreeConfirmed)} HNS free confirmed` : coins.status || 'Bridge needed');
   setText(dashboardWallets, `${walletCount} wallets`);
   setText(dashboardAttention, `${renewalCount} renewals · ${idnCount} IDNs`);
   setText(dashboardShakedex, shakedex.ok ? `${listings} listings · ${fills} fills` : shakedex.status || 'Bridge needed');
@@ -841,7 +849,7 @@ async function loadRegistry() {
 }
 
 function coinStatus(wallet) {
-  const locked = Number(wallet.lockedConfirmedHns || 0) + Number(wallet.lockedUnconfirmedHns || 0);
+  const locked = lockedHns(wallet);
   const unconfirmedDelta = Number(wallet.unconfirmedHns || 0) - Number(wallet.confirmedHns || 0);
   if (wallet.encrypted) return 'encrypted';
   if (wallet.watchOnly) return 'watch-only';
@@ -852,7 +860,11 @@ function coinStatus(wallet) {
 
 function coinSortValue(wallet, key) {
   if (key === 'lockedHns') {
-    return Number(wallet.lockedConfirmedHns || 0) + Number(wallet.lockedUnconfirmedHns || 0);
+    return lockedHns(wallet);
+  }
+
+  if (key === 'freeConfirmedHns') {
+    return freeConfirmedHns(wallet);
   }
 
   if (['spendableHns', 'confirmedHns', 'unconfirmedHns'].includes(key)) {
@@ -878,25 +890,26 @@ function sortedCoinWallets(wallets) {
 function renderCoins(result) {
   const coins = result.coins || {};
   const wallets = coins.wallets || [];
-  const totalSpendable = wallets.reduce((total, wallet) => total + Number(wallet.spendableHns || 0), 0);
+  const totalFreeConfirmed = wallets.reduce((total, wallet) => total + freeConfirmedHns(wallet), 0);
 
-  setText(coinsSummary, coins.ok ? `${formatHns(totalSpendable)} HNS spendable` : coins.status || 'Bridge needed');
+  setText(coinsSummary, coins.ok ? `${formatHns(totalFreeConfirmed)} HNS free confirmed` : coins.status || 'Bridge needed');
 
   if (!coins.ok) {
-    renderEmptyRow(coinsTable, 6, 'Install or run a Bob LearnHNS build with the coin balance bridge endpoint.');
+    renderEmptyRow(coinsTable, 7, 'Install or run a Bob LearnHNS build with the coin balance bridge endpoint.');
     return;
   }
 
   if (!wallets.length) {
-    renderEmptyRow(coinsTable, 6, 'No wallet balances found.');
+    renderEmptyRow(coinsTable, 7, 'No wallet balances found.');
     return;
   }
 
   coinsTable.innerHTML = '';
   for (const wallet of sortedCoinWallets(wallets)) {
-    const locked = Number(wallet.lockedConfirmedHns || 0) + Number(wallet.lockedUnconfirmedHns || 0);
+    const locked = lockedHns(wallet);
     appendTableRow(coinsTable, [
       wallet.wallet,
+      `${formatHns(freeConfirmedHns(wallet))} HNS`,
       `${formatHns(wallet.spendableHns)} HNS`,
       `${formatHns(wallet.confirmedHns)} HNS`,
       `${formatHns(wallet.unconfirmedHns)} HNS`,
