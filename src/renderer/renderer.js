@@ -36,6 +36,9 @@ const sortButtons = Array.from(document.querySelectorAll('.sort-button'));
 const coinSortButtons = Array.from(document.querySelectorAll('.coin-sort-button'));
 const navItems = Array.from(document.querySelectorAll('.nav-item'));
 const portfolioActions = document.getElementById('portfolioActions');
+const bobActions = document.getElementById('bobActions');
+const refreshPortfolioButton = document.getElementById('refreshPortfolioButton');
+const refreshBobButton = document.getElementById('refreshBobButton');
 const registryActions = document.getElementById('registryActions');
 const refreshRegistryButton = document.getElementById('refreshRegistryButton');
 const registrySourceButton = document.getElementById('registrySourceButton');
@@ -98,6 +101,7 @@ const viewLabels = {
 };
 const publicViews = new Set(['applications', 'news', 'funding']);
 const dashboardViews = new Set(['dashboard']);
+const bobRefreshViews = new Set(['dashboard', 'coins', 'wallets', 'attention', 'shakedex', 'scan', 'exports']);
 const REGISTRY_REPO_URL = 'https://github.com/shadstoneofficial/hns-community-registry';
 const REGISTRY_DATA_URL = `${REGISTRY_REPO_URL}/tree/main/data`;
 const REGISTRY_HOW_TO_SUBMIT_URL = 'https://hnsinvestments.com/sources/';
@@ -115,6 +119,7 @@ const registrySourceLabels = {
 };
 
 const SETTINGS_KEY = 'hnsInvestments.uiState.v1';
+const AUTO_REFRESH_INTERVAL_MS = 60 * 1000;
 
 let currentResult = null;
 let communityRegistry = null;
@@ -128,6 +133,8 @@ let coinSortState = {
   direction: 'desc'
 };
 let activeShakedexTab = 'listings';
+let scanInProgress = false;
+let lastScanStartedAt = 0;
 
 function loadSettings() {
   try {
@@ -213,6 +220,7 @@ function showView(viewName) {
   setText(viewEyebrow, label.eyebrow);
   setText(viewTitle, label.title);
   portfolioActions.hidden = viewName !== 'domains';
+  bobActions.hidden = !bobRefreshViews.has(viewName);
   registryActions.hidden = !(publicViews.has(viewName) || dashboardViews.has(viewName));
   summaryStats.hidden = publicViews.has(viewName) || dashboardViews.has(viewName);
   communityStats.hidden = !publicViews.has(viewName);
@@ -1181,8 +1189,16 @@ function renderScanDetails(result) {
 }
 
 async function runScan() {
+  if (scanInProgress) return;
+
+  scanInProgress = true;
+  lastScanStartedAt = Date.now();
   scanButton.disabled = true;
+  refreshPortfolioButton.disabled = true;
+  refreshBobButton.disabled = true;
   setText(scanState, 'Scanning');
+  setText(refreshPortfolioButton, 'Refreshing');
+  setText(refreshBobButton, 'Refreshing');
 
   try {
     const result = await window.hnsInvestments.scanPortfolio();
@@ -1223,10 +1239,27 @@ async function runScan() {
     scanDetails.appendChild(detailItem('Error', error.message || String(error), 'warning'));
   } finally {
     scanButton.disabled = false;
+    refreshPortfolioButton.disabled = false;
+    refreshBobButton.disabled = false;
+    setText(refreshPortfolioButton, 'Refresh');
+    setText(refreshBobButton, 'Refresh');
+    scanInProgress = false;
   }
 }
 
+function refreshIfStale() {
+  if (scanInProgress) return;
+  if (Date.now() - lastScanStartedAt < AUTO_REFRESH_INTERVAL_MS) return;
+  runScan();
+}
+
 scanButton.addEventListener('click', runScan);
+refreshPortfolioButton.addEventListener('click', runScan);
+refreshBobButton.addEventListener('click', runScan);
+window.addEventListener('focus', refreshIfStale);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshIfStale();
+});
 for (const item of navItems) {
   item.addEventListener('click', () => {
     showView(item.dataset.view || 'domains');
