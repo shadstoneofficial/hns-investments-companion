@@ -54,6 +54,11 @@ const attentionSummary = document.getElementById('attentionSummary');
 const attentionTable = document.getElementById('attentionTable');
 const expirationsSummary = document.getElementById('expirationsSummary');
 const expirationsTable = document.getElementById('expirationsTable');
+const watchNameInput = document.getElementById('watchNameInput');
+const watchLabelInput = document.getElementById('watchLabelInput');
+const watchImportInput = document.getElementById('watchImportInput');
+const addWatchButton = document.getElementById('addWatchButton');
+const importWatchButton = document.getElementById('importWatchButton');
 const idnSummary = document.getElementById('idnSummary');
 const idnTable = document.getElementById('idnTable');
 const shakedexSummary = document.getElementById('shakedexSummary');
@@ -124,6 +129,7 @@ const registrySourceLabels = {
 };
 
 const SETTINGS_KEY = 'hnsInvestments.uiState.v1';
+const MANUAL_WATCHLIST_KEY = 'hnsInvestments.manualWatchlist.v1';
 const AUTO_REFRESH_INTERVAL_MS = 60 * 1000;
 const HNS_BLOCK_MINUTES = 10;
 
@@ -141,6 +147,7 @@ let coinSortState = {
 let activeShakedexTab = 'listings';
 let scanInProgress = false;
 let lastScanStartedAt = 0;
+let manualWatchlist = loadManualWatchlist();
 
 function loadSettings() {
   try {
@@ -148,6 +155,55 @@ function loadSettings() {
   } catch (_error) {
     return {};
   }
+}
+
+function normalizeWatchName(value) {
+  return String(value || '')
+    .trim()
+    .replace(/\/+$/, '')
+    .toLowerCase();
+}
+
+function loadManualWatchlist() {
+  try {
+    const rows = JSON.parse(localStorage.getItem(MANUAL_WATCHLIST_KEY) || '[]');
+    return Array.isArray(rows)
+      ? rows
+        .map((row) => ({
+          name: normalizeWatchName(row.name),
+          label: String(row.label || '').trim(),
+          createdAt: row.createdAt || new Date().toISOString()
+        }))
+        .filter((row) => row.name)
+      : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
+function saveManualWatchlist() {
+  localStorage.setItem(MANUAL_WATCHLIST_KEY, JSON.stringify(manualWatchlist));
+}
+
+function addManualWatchNames(entries) {
+  const existing = new Map(manualWatchlist.map((entry) => [entry.name, entry]));
+  for (const entry of entries) {
+    const name = normalizeWatchName(entry.name);
+    if (!name) continue;
+    existing.set(name, {
+      name,
+      label: String(entry.label || existing.get(name)?.label || '').trim(),
+      createdAt: existing.get(name)?.createdAt || new Date().toISOString()
+    });
+  }
+  manualWatchlist = [...existing.values()].sort((a, b) => a.name.localeCompare(b.name));
+  saveManualWatchlist();
+}
+
+function removeManualWatchName(name) {
+  const normalized = normalizeWatchName(name);
+  manualWatchlist = manualWatchlist.filter((entry) => entry.name !== normalized);
+  saveManualWatchlist();
 }
 
 function saveSettings() {
@@ -629,7 +685,9 @@ function approximateDateForBlocks(blocksLeft) {
 
 function expirationRows(result) {
   const height = currentHeight(result);
-  return (result.names || [])
+  const rowsByName = new Map();
+
+  for (const row of (result.names || [])
     .filter((name) => !name.shakedexListingOnly)
     .map((name) => {
       const renewalHeight = Number(name.renewalHeight || 0);
@@ -640,6 +698,7 @@ function expirationRows(result) {
 
       return {
         name: name.name,
+        normalizedName: normalizeWatchName(name.name),
         render: renderedNameLabel(name),
         source: 'Bob LearnHNS',
         ownerLabel: name.wallet || 'local wallet',
@@ -647,20 +706,60 @@ function expirationRows(result) {
         expirationHeight: expirationHeight || '',
         blocksLeft,
         estimatedDate: hasHeight ? approximateDateForBlocks(blocksLeft) : 'unknown',
-        risk
+        risk,
+        manual: false,
+        manualLabel: ''
       };
-    })
-    .sort((a, b) => {
-      const aBlocks = Number.isFinite(a.blocksLeft) ? a.blocksLeft : Number.MAX_SAFE_INTEGER;
-      const bBlocks = Number.isFinite(b.blocksLeft) ? b.blocksLeft : Number.MAX_SAFE_INTEGER;
-      return aBlocks - bBlocks || String(a.name).localeCompare(String(b.name));
+    })) {
+    rowsByName.set(row.normalizedName, row);
+  }
+
+  for (const manual of manualWatchlist) {
+    const existing = rowsByName.get(manual.name);
+    if (existing) {
+      existing.source = 'Bob LearnHNS + Manual';
+      existing.ownerLabel = manual.label
+        ? `${existing.ownerLabel} · ${manual.label}`
+        : existing.ownerLabel;
+      existing.manual = true;
+      existing.manualLabel = manual.label;
+      continue;
+    }
+
+    rowsByName.set(manual.name, {
+      name: manual.name,
+      normalizedName: manual.name,
+      render: '',
+      source: 'Manual',
+      ownerLabel: manual.label || 'local watchlist',
+      renewalHeight: '',
+      expirationHeight: '',
+      blocksLeft: null,
+      estimatedDate: 'needs check',
+      risk: 'Unknown',
+      manual: true,
+      manualLabel: manual.label
     });
+  }
+
+  return [...rowsByName.values()].sort((a, b) => {
+    const aBlocks = Number.isFinite(a.blocksLeft) ? a.blocksLeft : Number.MAX_SAFE_INTEGER;
+    const bBlocks = Number.isFinite(b.blocksLeft) ? b.blocksLeft : Number.MAX_SAFE_INTEGER;
+    return aBlocks - bBlocks || String(a.name).localeCompare(String(b.name));
+  });
+}
+
+function riskLabel(risk) {
+  if (risk === 'Renew Soon') return 'Soon';
+  if (risk === 'Expired / Needs Check') return 'Needs Check';
+  return risk;
 }
 
 function riskBadge(risk) {
   const badge = document.createElement('span');
   badge.className = `risk-badge risk-${String(risk).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-  badge.textContent = risk;
+  badge.textContent = riskLabel(risk);
+  badge.title = risk;
   return badge;
 }
 
@@ -669,13 +768,13 @@ function renderExpirations(result) {
   const actionableRows = rows.filter((row) => ['Urgent', 'Renew Soon', 'Expired / Needs Check', 'Unknown'].includes(row.risk));
   setText(expirationsSummary, `${rows.length} watched · ${actionableRows.length} need review`);
 
-  if (!result.bridge?.ok) {
-    renderEmptyRow(expirationsTable, 8, 'Connect a bridge-enabled Bob LearnHNS build to show owned-domain expirations.');
+  if (!result.bridge?.ok && !manualWatchlist.length) {
+    renderEmptyRow(expirationsTable, 9, 'Connect a bridge-enabled Bob LearnHNS build or add manual watch names.');
     return;
   }
 
   if (!rows.length) {
-    renderEmptyRow(expirationsTable, 8, 'No owned-domain expiration data found yet.');
+    renderEmptyRow(expirationsTable, 9, 'No owned-domain or manual expiration watch data found yet.');
     return;
   }
 
@@ -703,6 +802,21 @@ function renderExpirations(result) {
     const riskCell = document.createElement('td');
     riskCell.appendChild(riskBadge(row.risk));
     tr.appendChild(riskCell);
+
+    const actionCell = document.createElement('td');
+    if (row.manual) {
+      const button = document.createElement('button');
+      button.className = 'inline-action';
+      button.type = 'button';
+      button.textContent = 'Remove';
+      button.addEventListener('click', () => {
+        removeManualWatchName(row.normalizedName);
+        renderExpirations(currentResult || { names: [], bridge: { ok: false } });
+        if (currentResult) updatePortfolioDashboard(currentResult);
+      });
+      actionCell.appendChild(button);
+    }
+    tr.appendChild(actionCell);
     expirationsTable.appendChild(tr);
   }
 }
@@ -1371,6 +1485,32 @@ refreshBobButton.addEventListener('click', runScan);
 window.addEventListener('focus', refreshIfStale);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') refreshIfStale();
+});
+addWatchButton.addEventListener('click', () => {
+  addManualWatchNames([{
+    name: watchNameInput.value,
+    label: watchLabelInput.value
+  }]);
+  watchNameInput.value = '';
+  watchLabelInput.value = '';
+  renderExpirations(currentResult || { names: [], bridge: { ok: false } });
+  if (currentResult) updatePortfolioDashboard(currentResult);
+});
+watchNameInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') addWatchButton.click();
+});
+watchLabelInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') addWatchButton.click();
+});
+importWatchButton.addEventListener('click', () => {
+  const names = watchImportInput.value
+    .split(/[\n,]+/)
+    .map((name) => ({ name }))
+    .filter((entry) => normalizeWatchName(entry.name));
+  addManualWatchNames(names);
+  watchImportInput.value = '';
+  renderExpirations(currentResult || { names: [], bridge: { ok: false } });
+  if (currentResult) updatePortfolioDashboard(currentResult);
 });
 for (const item of navItems) {
   item.addEventListener('click', () => {

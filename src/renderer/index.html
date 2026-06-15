@@ -293,6 +293,13 @@
               <h3>Expiration Watchlist</h3>
               <span id="expirationsSummary">0 watched</span>
             </div>
+            <div class="watchlist-editor" aria-label="Manual watchlist editor">
+              <input id="watchNameInput" type="text" placeholder="Name to watch" autocomplete="off">
+              <input id="watchLabelInput" type="text" placeholder="Label or group" autocomplete="off">
+              <button id="addWatchButton" class="secondary-action" type="button">Add</button>
+              <textarea id="watchImportInput" placeholder="Paste names, one per line"></textarea>
+              <button id="importWatchButton" class="secondary-action" type="button">Import</button>
+            </div>
             <div class="table-scroll">
               <table>
                 <colgroup>
@@ -304,6 +311,7 @@
                   <col class="expiration-blocks-col">
                   <col class="expiration-date-col">
                   <col class="expiration-risk-col">
+                  <col class="expiration-action-col">
                 </colgroup>
                 <thead>
                   <tr>
@@ -315,18 +323,19 @@
                     <th>Blocks left</th>
                     <th>Estimate</th>
                     <th>Risk</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="expirationsTable">
                   <tr>
-                    <td colspan="8" class="empty-cell">Run a scan to build the expiration watchlist.</td>
+                    <td colspan="9" class="empty-cell">Run a scan to build the expiration watchlist.</td>
                   </tr>
                 </tbody>
               </table>
               <div class="coin-definitions" aria-label="Expiration watchlist definitions">
                 <div>
                   <strong>Source</strong>
-                  <span>Phase 1 uses local Bob LearnHNS owned domains. Registry, staked, and manual watchlists come later.</span>
+                  <span>Bob LearnHNS rows are local wallet names. Manual rows are stored only on this machine.</span>
                 </div>
                 <div>
                   <strong>Risk</strong>

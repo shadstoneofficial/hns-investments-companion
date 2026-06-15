@@ -261,6 +261,10 @@ select {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+#expirationsView .table-panel {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
 .scan-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
@@ -640,6 +644,44 @@ select {
   font-size: 12px;
 }
 
+.watchlist-editor {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) auto minmax(220px, 1.4fr) auto;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: #fffdfa;
+}
+
+.watchlist-editor input,
+.watchlist-editor textarea {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--field);
+}
+
+.watchlist-editor textarea {
+  min-height: 38px;
+  padding-top: 8px;
+  resize: vertical;
+}
+
+.inline-action {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--accent);
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -721,27 +763,27 @@ table {
 }
 
 .expiration-name-col {
-  width: 17%;
+  width: 15%;
 }
 
 .expiration-render-col {
-  width: 14%;
+  width: 10%;
 }
 
 .expiration-source-col {
-  width: 13%;
+  width: 12%;
 }
 
 .expiration-owner-col {
-  width: 16%;
+  width: 15%;
 }
 
 .expiration-height-col {
-  width: 11%;
+  width: 10%;
 }
 
 .expiration-blocks-col {
-  width: 11%;
+  width: 10%;
 }
 
 .expiration-date-col {
@@ -749,6 +791,10 @@ table {
 }
 
 .expiration-risk-col {
+  width: 10%;
+}
+
+.expiration-action-col {
   width: 8%;
 }
 
@@ -870,6 +916,8 @@ th {
 }
 
 .risk-badge {
+  max-width: none;
+  min-width: max-content;
   border-color: #ded7c8;
   color: var(--muted);
   background: #ffffff;
