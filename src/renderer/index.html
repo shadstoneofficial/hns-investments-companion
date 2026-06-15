@@ -23,6 +23,7 @@
           <button class="nav-item" type="button" data-view="coins">Coins</button>
           <button class="nav-item" type="button" data-view="wallets">Wallets</button>
           <button class="nav-item" type="button" data-view="attention">Attention</button>
+          <button class="nav-item" type="button" data-view="expirations">Expirations</button>
           <button class="nav-item" type="button" data-view="shakedex">Shakedex</button>
           <button class="nav-item" type="button" data-view="applications">Applications</button>
           <button class="nav-item" type="button" data-view="news">News</button>
@@ -147,6 +148,11 @@
               <span>Operations</span>
               <strong>Attention</strong>
               <small id="dashboardAttention">Renewals and IDNs</small>
+            </button>
+            <button class="dashboard-tile" type="button" data-target-view="expirations">
+              <span>Watchlist</span>
+              <strong>Expirations</strong>
+              <small id="dashboardExpirations">No watch data yet</small>
             </button>
             <button class="dashboard-tile" type="button" data-target-view="shakedex">
               <span>Marketplace</span>
@@ -275,6 +281,56 @@
                 <div>
                   <strong>Status</strong>
                   <span>Simple warning: encrypted, watch-only, locked, unconfirmed, or ready.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="expirationsView" class="view">
+          <div class="panel table-panel">
+            <div class="panel-header">
+              <h3>Expiration Watchlist</h3>
+              <span id="expirationsSummary">0 watched</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <colgroup>
+                  <col class="expiration-name-col">
+                  <col class="expiration-render-col">
+                  <col class="expiration-source-col">
+                  <col class="expiration-owner-col">
+                  <col class="expiration-height-col">
+                  <col class="expiration-blocks-col">
+                  <col class="expiration-date-col">
+                  <col class="expiration-risk-col">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Render</th>
+                    <th>Source</th>
+                    <th>Owner / Label</th>
+                    <th>Expires</th>
+                    <th>Blocks left</th>
+                    <th>Estimate</th>
+                    <th>Risk</th>
+                  </tr>
+                </thead>
+                <tbody id="expirationsTable">
+                  <tr>
+                    <td colspan="8" class="empty-cell">Run a scan to build the expiration watchlist.</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="coin-definitions" aria-label="Expiration watchlist definitions">
+                <div>
+                  <strong>Source</strong>
+                  <span>Phase 1 uses local Bob LearnHNS owned domains. Registry, staked, and manual watchlists come later.</span>
+                </div>
+                <div>
+                  <strong>Risk</strong>
+                  <span>Calculated from current block height and Bob's expiration height. Dates are approximate.</span>
                 </div>
               </div>
             </div>

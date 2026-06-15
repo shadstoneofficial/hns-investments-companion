@@ -720,6 +720,38 @@ table {
   width: 18%;
 }
 
+.expiration-name-col {
+  width: 17%;
+}
+
+.expiration-render-col {
+  width: 14%;
+}
+
+.expiration-source-col {
+  width: 13%;
+}
+
+.expiration-owner-col {
+  width: 16%;
+}
+
+.expiration-height-col {
+  width: 11%;
+}
+
+.expiration-blocks-col {
+  width: 11%;
+}
+
+.expiration-date-col {
+  width: 10%;
+}
+
+.expiration-risk-col {
+  width: 8%;
+}
+
 th,
 td {
   height: 42px;
@@ -816,7 +848,8 @@ th {
 }
 
 .status-badge,
-.tag-badge {
+.tag-badge,
+.risk-badge {
   display: inline-flex;
   align-items: center;
   max-width: 100%;
@@ -834,6 +867,41 @@ th {
 
 .status-badge {
   margin-left: 8px;
+}
+
+.risk-badge {
+  border-color: #ded7c8;
+  color: var(--muted);
+  background: #ffffff;
+}
+
+.risk-urgent,
+.risk-expired-needs-check {
+  border-color: #f0c36b;
+  color: #6b3a00;
+  background: #fff0c7;
+}
+
+.risk-renew-soon {
+  border-color: #d8b15b;
+  color: #6b4a00;
+  background: #fff7df;
+}
+
+.risk-watch {
+  border-color: #bfd4cf;
+  color: #15534e;
+  background: #e8f5f2;
+}
+
+.risk-safe {
+  border-color: #b9dec9;
+  color: var(--ok);
+  background: var(--ok-bg);
+}
+
+.attention-row td {
+  background: #fffaf0;
 }
 
 .shakedex-badge,

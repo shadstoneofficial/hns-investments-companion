@@ -4,6 +4,12 @@ const os = require('node:os');
 const { domainToUnicode } = require('node:url');
 
 const BRIDGE_MANIFEST = 'hns-investments-bridge.json';
+const RENEWAL_WINDOWS = {
+  main: 105120,
+  testnet: 4320,
+  regtest: 5000,
+  simnet: 2500
+};
 
 function appSupportRoot() {
   if (process.platform === 'darwin') {
@@ -93,6 +99,12 @@ function heightLabel(value) {
   return value ? String(value) : '';
 }
 
+function expirationHeight(renewalHeight, network) {
+  const renewal = Number(renewalHeight || 0);
+  const renewalWindow = RENEWAL_WINDOWS[network] || RENEWAL_WINDOWS.main;
+  return renewal > 0 ? renewal + renewalWindow : 0;
+}
+
 function normalizeBridgeNameValue(value) {
   if (!value) return '';
   if (typeof value === 'string') return value;
@@ -107,16 +119,18 @@ function unicodeName(asciiName) {
   return domainToUnicode(asciiName) || asciiName;
 }
 
-function normalizeBridgeName(name) {
+function normalizeBridgeName(name, network = 'main') {
   const asciiName = normalizeBridgeNameValue(name.name);
+  const expiresAt = expirationHeight(name.renewalHeight, network);
   return {
     name: asciiName,
     unicodeName: unicodeName(asciiName),
     isIdn: asciiName.includes('xn--'),
     status: name.status || 'owned',
     wallet: name.walletDisplayName || name.walletId || 'Bob LearnHNS',
-    expires: heightLabel(name.renewalHeight),
+    expires: heightLabel(expiresAt),
     renewalHeight: name.renewalHeight || '',
+    expirationHeight: expiresAt || '',
     transferHeight: name.transferHeight || '',
     hnsPaid: name.hnsPaid == null ? '' : String(name.hnsPaid),
     ownerHash: name.owner?.hash || '',
@@ -152,7 +166,7 @@ async function fetchBobBridgePortfolio() {
     network: portfolio.network || null,
     height: portfolio.height || 0,
     wallets: portfolio.wallets || [],
-    names: (portfolio.names || []).map(normalizeBridgeName)
+    names: (portfolio.names || []).map((name) => normalizeBridgeName(name, portfolio.network || 'main'))
   };
 }
 

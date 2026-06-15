@@ -20,6 +20,7 @@ const dashboardDomains = document.getElementById('dashboardDomains');
 const dashboardCoins = document.getElementById('dashboardCoins');
 const dashboardWallets = document.getElementById('dashboardWallets');
 const dashboardAttention = document.getElementById('dashboardAttention');
+const dashboardExpirations = document.getElementById('dashboardExpirations');
 const dashboardShakedex = document.getElementById('dashboardShakedex');
 const dashboardApplications = document.getElementById('dashboardApplications');
 const dashboardNews = document.getElementById('dashboardNews');
@@ -51,6 +52,8 @@ const walletsSummary = document.getElementById('walletsSummary');
 const walletsTable = document.getElementById('walletsTable');
 const attentionSummary = document.getElementById('attentionSummary');
 const attentionTable = document.getElementById('attentionTable');
+const expirationsSummary = document.getElementById('expirationsSummary');
+const expirationsTable = document.getElementById('expirationsTable');
 const idnSummary = document.getElementById('idnSummary');
 const idnTable = document.getElementById('idnTable');
 const shakedexSummary = document.getElementById('shakedexSummary');
@@ -79,6 +82,7 @@ const views = {
   coins: document.getElementById('coinsView'),
   wallets: document.getElementById('walletsView'),
   attention: document.getElementById('attentionView'),
+  expirations: document.getElementById('expirationsView'),
   shakedex: document.getElementById('shakedexView'),
   applications: document.getElementById('applicationsView'),
   news: document.getElementById('newsView'),
@@ -92,6 +96,7 @@ const viewLabels = {
   coins: { eyebrow: 'Bob LearnHNS', title: 'Coins' },
   wallets: { eyebrow: 'Domains', title: 'Wallets' },
   attention: { eyebrow: 'Domains', title: 'Attention' },
+  expirations: { eyebrow: 'Watchlist', title: 'Expirations' },
   shakedex: { eyebrow: 'Bob LearnHNS', title: 'Shakedex' },
   applications: { eyebrow: 'Community Registry', title: 'Applications' },
   news: { eyebrow: 'Community Registry', title: 'News' },
@@ -101,7 +106,7 @@ const viewLabels = {
 };
 const publicViews = new Set(['applications', 'news', 'funding']);
 const dashboardViews = new Set(['dashboard']);
-const bobRefreshViews = new Set(['dashboard', 'coins', 'wallets', 'attention', 'shakedex', 'scan', 'exports']);
+const bobRefreshViews = new Set(['dashboard', 'coins', 'wallets', 'attention', 'expirations', 'shakedex', 'scan', 'exports']);
 const REGISTRY_REPO_URL = 'https://github.com/shadstoneofficial/hns-community-registry';
 const REGISTRY_DATA_URL = `${REGISTRY_REPO_URL}/tree/main/data`;
 const REGISTRY_HOW_TO_SUBMIT_URL = 'https://hnsinvestments.com/sources/';
@@ -120,6 +125,7 @@ const registrySourceLabels = {
 
 const SETTINGS_KEY = 'hnsInvestments.uiState.v1';
 const AUTO_REFRESH_INTERVAL_MS = 60 * 1000;
+const HNS_BLOCK_MINUTES = 10;
 
 let currentResult = null;
 let communityRegistry = null;
@@ -602,6 +608,105 @@ function renderAttention(result) {
   }
 }
 
+function currentHeight(result) {
+  return Number(result?.bridge?.height || result?.coins?.height || 0);
+}
+
+function riskForBlocks(blocksLeft, hasHeight = true) {
+  if (!hasHeight) return 'Unknown';
+  if (blocksLeft <= 0) return 'Expired / Needs Check';
+  if (blocksLeft <= 2000) return 'Urgent';
+  if (blocksLeft <= 10000) return 'Renew Soon';
+  if (blocksLeft <= 25000) return 'Watch';
+  return 'Safe';
+}
+
+function approximateDateForBlocks(blocksLeft) {
+  if (!Number.isFinite(blocksLeft) || blocksLeft <= 0) return 'needs check';
+  const milliseconds = blocksLeft * HNS_BLOCK_MINUTES * 60 * 1000;
+  return `~${new Date(Date.now() + milliseconds).toLocaleDateString()}`;
+}
+
+function expirationRows(result) {
+  const height = currentHeight(result);
+  return (result.names || [])
+    .filter((name) => !name.shakedexListingOnly)
+    .map((name) => {
+      const renewalHeight = Number(name.renewalHeight || 0);
+      const expirationHeight = Number(name.expirationHeight || name.expires || 0);
+      const hasHeight = expirationHeight > 0 && height > 0;
+      const blocksLeft = hasHeight ? expirationHeight - height : null;
+      const risk = riskForBlocks(blocksLeft || 0, hasHeight);
+
+      return {
+        name: name.name,
+        render: renderedNameLabel(name),
+        source: 'Bob LearnHNS',
+        ownerLabel: name.wallet || 'local wallet',
+        renewalHeight: renewalHeight || '',
+        expirationHeight: expirationHeight || '',
+        blocksLeft,
+        estimatedDate: hasHeight ? approximateDateForBlocks(blocksLeft) : 'unknown',
+        risk
+      };
+    })
+    .sort((a, b) => {
+      const aBlocks = Number.isFinite(a.blocksLeft) ? a.blocksLeft : Number.MAX_SAFE_INTEGER;
+      const bBlocks = Number.isFinite(b.blocksLeft) ? b.blocksLeft : Number.MAX_SAFE_INTEGER;
+      return aBlocks - bBlocks || String(a.name).localeCompare(String(b.name));
+    });
+}
+
+function riskBadge(risk) {
+  const badge = document.createElement('span');
+  badge.className = `risk-badge risk-${String(risk).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  badge.textContent = risk;
+  return badge;
+}
+
+function renderExpirations(result) {
+  const rows = expirationRows(result);
+  const actionableRows = rows.filter((row) => ['Urgent', 'Renew Soon', 'Expired / Needs Check', 'Unknown'].includes(row.risk));
+  setText(expirationsSummary, `${rows.length} watched · ${actionableRows.length} need review`);
+
+  if (!result.bridge?.ok) {
+    renderEmptyRow(expirationsTable, 8, 'Connect a bridge-enabled Bob LearnHNS build to show owned-domain expirations.');
+    return;
+  }
+
+  if (!rows.length) {
+    renderEmptyRow(expirationsTable, 8, 'No owned-domain expiration data found yet.');
+    return;
+  }
+
+  expirationsTable.innerHTML = '';
+  for (const row of rows.slice(0, 250)) {
+    const tr = document.createElement('tr');
+    if (['Urgent', 'Renew Soon', 'Expired / Needs Check'].includes(row.risk)) {
+      tr.classList.add('attention-row');
+    }
+
+    for (const value of [
+      row.name,
+      row.render,
+      row.source,
+      row.ownerLabel,
+      row.expirationHeight || 'unknown',
+      Number.isFinite(row.blocksLeft) ? row.blocksLeft.toLocaleString() : 'unknown',
+      row.estimatedDate
+    ]) {
+      const cell = document.createElement('td');
+      cell.textContent = value == null ? '' : String(value);
+      tr.appendChild(cell);
+    }
+
+    const riskCell = document.createElement('td');
+    riskCell.appendChild(riskBadge(row.risk));
+    tr.appendChild(riskCell);
+    expirationsTable.appendChild(tr);
+  }
+}
+
 function renderShakedex(result) {
   const shakedex = result.shakedex || {};
   const listings = shakedex.listings || [];
@@ -653,11 +758,17 @@ function updatePortfolioDashboard(result) {
   const fills = shakedex.fulfillmentCount || shakedex.fulfillments?.length || 0;
   const renewalCount = names.filter((name) => Number(name.renewalHeight || 0) > 0).length;
   const idnCount = names.filter((name) => name.isIdn).length;
+  const expirations = expirationRows(result);
+  const urgentExpirations = expirations.filter((row) => ['Urgent', 'Expired / Needs Check'].includes(row.risk)).length;
+  const soonExpirations = expirations.filter((row) => row.risk === 'Renew Soon').length;
 
   setText(dashboardDomains, `${names.length} names indexed`);
   setText(dashboardCoins, coins.ok ? `${formatHns(totalFreeConfirmed)} HNS free confirmed` : coins.status || 'Bridge needed');
   setText(dashboardWallets, `${walletCount} wallets`);
   setText(dashboardAttention, `${renewalCount} renewals · ${idnCount} IDNs`);
+  setText(dashboardExpirations, urgentExpirations
+    ? `${urgentExpirations} urgent · ${soonExpirations} soon`
+    : `${soonExpirations} renew soon · ${expirations.length} watched`);
   setText(dashboardShakedex, shakedex.ok ? `${listings} listings · ${fills} fills` : shakedex.status || 'Bridge needed');
   setText(dashboardScan, result.summary?.modeLabel ? `${result.summary.modeLabel} connected` : 'Ready');
   setText(dashboardExports, `${names.length} names exportable`);
@@ -1228,6 +1339,7 @@ async function runScan() {
     renderCoins(result);
     renderWallets(result);
     renderAttention(result);
+    renderExpirations(result);
     renderShakedex(result);
     renderExports(result);
     renderScanDetails(result);
