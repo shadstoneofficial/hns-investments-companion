@@ -924,7 +924,8 @@ th {
 }
 
 .risk-urgent,
-.risk-expired-needs-check {
+.risk-expired-needs-check,
+.risk-needs-check {
   border-color: #f0c36b;
   color: #6b3a00;
   background: #fff0c7;
@@ -946,6 +947,12 @@ th {
   border-color: #b9dec9;
   color: var(--ok);
   background: var(--ok-bg);
+}
+
+.risk-listed {
+  border-color: #f1ce74;
+  color: #765000;
+  background: #fff2bf;
 }
 
 .attention-row td {

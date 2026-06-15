@@ -682,9 +682,11 @@ function riskSortPriority(risk) {
     'Expired / Needs Check': 0,
     Urgent: 1,
     'Renew Soon': 2,
-    Unknown: 3,
-    Watch: 4,
-    Safe: 5
+    'Needs Check': 3,
+    Unknown: 4,
+    Watch: 5,
+    Listed: 6,
+    Safe: 7
   }[risk] ?? 6;
 }
 
@@ -697,29 +699,43 @@ function approximateDateForBlocks(blocksLeft) {
 function expirationRows(result) {
   const height = currentHeight(result);
   const rowsByName = new Map();
+  const listingsByName = shakedexListingMap(result);
+  const fulfillmentsByName = shakedexFulfillmentMap(result);
 
   for (const row of (result.names || [])
-    .filter((name) => !name.shakedexListingOnly)
     .map((name) => {
+      const listing = listingsByName.get(name.name);
+      const fulfillment = fulfillmentsByName.get(name.name);
+      const isListingOnly = !!name.shakedexListingOnly || name.source?.type === 'bob-learnhns-shakedex-listing';
       const renewalHeight = Number(name.renewalHeight || 0);
       const expirationHeight = Number(name.expirationHeight || name.expires || 0);
       const hasHeight = expirationHeight > 0 && height > 0;
       const blocksLeft = hasHeight ? expirationHeight - height : null;
-      const risk = riskForBlocks(blocksLeft || 0, hasHeight);
+      const risk = isListingOnly && listing ? 'Listed' : riskForBlocks(blocksLeft || 0, hasHeight);
+      const source = [
+        isListingOnly ? 'Shakedex Listing' : 'Bob LearnHNS',
+        !isListingOnly && listing ? 'Shakedex Listed' : '',
+        fulfillment ? 'Shakedex Bought' : ''
+      ].filter(Boolean).join(' + ');
 
       return {
         name: name.name,
         normalizedName: normalizeWatchName(name.name),
         render: renderedNameLabel(name),
-        source: 'Bob LearnHNS',
+        source,
         ownerLabel: name.wallet || 'local wallet',
         renewalHeight: renewalHeight || '',
         expirationHeight: expirationHeight || '',
         blocksLeft,
-        estimatedDate: hasHeight ? approximateDateForBlocks(blocksLeft) : 'unknown',
+        estimatedDate: hasHeight
+          ? approximateDateForBlocks(blocksLeft)
+          : isListingOnly
+            ? 'listing proof only'
+            : 'unknown',
         risk,
         manual: false,
-        manualLabel: ''
+        manualLabel: '',
+        listing
       };
     })) {
     rowsByName.set(row.normalizedName, row);
@@ -747,7 +763,7 @@ function expirationRows(result) {
       expirationHeight: '',
       blocksLeft: null,
       estimatedDate: 'needs check',
-      risk: 'Unknown',
+      risk: 'Needs Check',
       manual: true,
       manualLabel: manual.label
     });
@@ -778,7 +794,7 @@ function riskBadge(risk) {
 
 function renderExpirations(result) {
   const rows = expirationRows(result);
-  const actionableRows = rows.filter((row) => ['Urgent', 'Renew Soon', 'Expired / Needs Check', 'Unknown'].includes(row.risk));
+  const actionableRows = rows.filter((row) => ['Urgent', 'Renew Soon', 'Expired / Needs Check', 'Needs Check', 'Unknown'].includes(row.risk));
   setText(expirationsSummary, `${rows.length} watched · ${actionableRows.length} need review`);
 
   if (!result.bridge?.ok && !manualWatchlist.length) {
@@ -794,7 +810,7 @@ function renderExpirations(result) {
   expirationsTable.innerHTML = '';
   for (const row of rows) {
     const tr = document.createElement('tr');
-    if (['Urgent', 'Renew Soon', 'Expired / Needs Check', 'Unknown'].includes(row.risk)) {
+    if (['Urgent', 'Renew Soon', 'Expired / Needs Check', 'Needs Check', 'Unknown'].includes(row.risk)) {
       tr.classList.add('attention-row');
     }
 

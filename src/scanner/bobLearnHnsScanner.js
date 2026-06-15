@@ -163,10 +163,12 @@ function mergeNamesWithShakedexInventory(names, listings, fulfillments) {
       wallet: listing.wallet || 'Bob LearnHNS',
       expires: '',
       renewalHeight: '',
+      expirationHeight: '',
       transferHeight: '',
       hnsPaid: '',
       ownerHash: '',
       ownerIndex: '',
+      shakedexListingOnly: true,
       tags: [
         'shakedex',
         'shakedex-listed',
