@@ -677,6 +677,17 @@ function riskForBlocks(blocksLeft, hasHeight = true) {
   return 'Safe';
 }
 
+function riskSortPriority(risk) {
+  return {
+    'Expired / Needs Check': 0,
+    Urgent: 1,
+    'Renew Soon': 2,
+    Unknown: 3,
+    Watch: 4,
+    Safe: 5
+  }[risk] ?? 6;
+}
+
 function approximateDateForBlocks(blocksLeft) {
   if (!Number.isFinite(blocksLeft) || blocksLeft <= 0) return 'needs check';
   const milliseconds = blocksLeft * HNS_BLOCK_MINUTES * 60 * 1000;
@@ -743,6 +754,8 @@ function expirationRows(result) {
   }
 
   return [...rowsByName.values()].sort((a, b) => {
+    const riskDelta = riskSortPriority(a.risk) - riskSortPriority(b.risk);
+    if (riskDelta !== 0) return riskDelta;
     const aBlocks = Number.isFinite(a.blocksLeft) ? a.blocksLeft : Number.MAX_SAFE_INTEGER;
     const bBlocks = Number.isFinite(b.blocksLeft) ? b.blocksLeft : Number.MAX_SAFE_INTEGER;
     return aBlocks - bBlocks || String(a.name).localeCompare(String(b.name));
@@ -779,9 +792,9 @@ function renderExpirations(result) {
   }
 
   expirationsTable.innerHTML = '';
-  for (const row of rows.slice(0, 250)) {
+  for (const row of rows) {
     const tr = document.createElement('tr');
-    if (['Urgent', 'Renew Soon', 'Expired / Needs Check'].includes(row.risk)) {
+    if (['Urgent', 'Renew Soon', 'Expired / Needs Check', 'Unknown'].includes(row.risk)) {
       tr.classList.add('attention-row');
     }
 
