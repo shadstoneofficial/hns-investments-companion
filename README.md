@@ -8,7 +8,7 @@ Current status: the app detects Bob LearnHNS and uses the HNS Investments read-o
 
 ## Current Screens
 
-- Domains: owned names plus local Shakedex inventory from Bob LearnHNS, with search, wallet, length, IDN, emoji, tag filters, bought/listed Shakedex indicators, and sortable columns.
+- Domains: owned names plus local Shakedex inventory from Bob LearnHNS, with editable user tags, search, wallet, length, IDN, emoji and tag filters, bought/listed Shakedex indicators, and sortable columns.
 - Coins: HNS-only wallet balances by wallet, with spendable, confirmed, unconfirmed, locked, and status columns. USD is not shown.
 - Wallets: wallet-level domain summaries. Click a wallet row to filter Domains.
 - Attention: nearest renewal heights and IDN review.
@@ -29,7 +29,7 @@ Current status: the app detects Bob LearnHNS and uses the HNS Investments read-o
 
 ## Local Settings
 
-The app stores UI preferences in Electron/browser local storage, including selected screen, filters, sort direction, and Shakedex sub-tab. These settings are local app metadata and are not meant to be committed.
+The app stores UI preferences in Electron/browser local storage, including selected screen, filters, sort direction, and Shakedex sub-tab. User-created domain tags are stored separately in `domain-tags.json` inside Electron's per-user application data folder. Tags stay on the device, are independent of Bob wallets, and are included in CSV/JSON exports. These settings are local app metadata and are not meant to be committed.
 
 ## Development
 

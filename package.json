@@ -22,7 +22,8 @@
     "package-win": "electron-builder --win nsis --x64 --publish=never",
     "package-linux": "electron-builder --linux AppImage --x64 --publish=never",
     "scan": "node scripts/smoke-scan.js",
-    "test": "node scripts/smoke-scan.js --json"
+    "test": "node scripts/smoke-scan.js --json",
+    "test:unit": "node --test tests/*.test.js"
   },
   "keywords": [
     "handshake",

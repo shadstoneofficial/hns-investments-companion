@@ -80,6 +80,14 @@ const exportCsvButton = document.getElementById('exportCsvButton');
 const exportJsonButton = document.getElementById('exportJsonButton');
 const exportOwnedCsvButton = document.getElementById('exportOwnedCsvButton');
 const exportShakedexCsvButton = document.getElementById('exportShakedexCsvButton');
+const tagDialog = document.getElementById('tagDialog');
+const tagForm = document.getElementById('tagForm');
+const tagDialogClose = document.getElementById('tagDialogClose');
+const tagCancelButton = document.getElementById('tagCancelButton');
+const tagSaveButton = document.getElementById('tagSaveButton');
+const tagDomainName = document.getElementById('tagDomainName');
+const tagInput = document.getElementById('tagInput');
+const tagDialogError = document.getElementById('tagDialogError');
 const dashboardTiles = Array.from(document.querySelectorAll('.dashboard-tile'));
 const views = {
   dashboard: document.getElementById('dashboardView'),
@@ -135,6 +143,8 @@ const HNS_BLOCK_MINUTES = 10;
 
 let currentResult = null;
 let communityRegistry = null;
+let domainTagStore = { version: 1, domains: {} };
+let editingDomainName = '';
 let activeView = 'dashboard';
 let sortState = {
   key: 'name',
@@ -369,6 +379,67 @@ function populateWalletFilter(names) {
   walletFilter.value = wallets.includes(selected) ? selected : '';
 }
 
+function customTagsForName(name) {
+  return domainTagStore.domains?.[String(name || '').trim().toLowerCase()] || [];
+}
+
+function customTagFilterValue(tag) {
+  return `custom:${String(tag).toLowerCase()}`;
+}
+
+function populateTagFilter() {
+  const selected = tagFilter.value || loadSettings().filters?.tag || '';
+  const systemTags = [
+    ['shakedex', 'Shakedex'],
+    ['shakedex-listed', 'Listed'],
+    ['shakedex-bought', 'Bought'],
+    ['listing-only', 'Listing-only'],
+    ['idn', 'IDN'],
+    ['emoji', 'Emoji']
+  ];
+  const tagsByKey = new Map();
+  for (const tag of Object.values(domainTagStore.domains || {}).flat()) {
+    const label = String(tag).trim();
+    if (label && !tagsByKey.has(label.toLowerCase())) {
+      tagsByKey.set(label.toLowerCase(), label);
+    }
+  }
+  const customTags = [...tagsByKey.values()]
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+  tagFilter.innerHTML = '';
+  const allOption = document.createElement('option');
+  allOption.value = '';
+  allOption.textContent = 'Any tag';
+  tagFilter.appendChild(allOption);
+
+  if (customTags.length) {
+    const customGroup = document.createElement('optgroup');
+    customGroup.label = 'My tags';
+    for (const tag of customTags) {
+      const option = document.createElement('option');
+      option.value = customTagFilterValue(tag);
+      option.textContent = tag;
+      customGroup.appendChild(option);
+    }
+    tagFilter.appendChild(customGroup);
+  }
+
+  const systemGroup = document.createElement('optgroup');
+  systemGroup.label = 'Automatic tags';
+  for (const [value, label] of systemTags) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    systemGroup.appendChild(option);
+  }
+  tagFilter.appendChild(systemGroup);
+
+  tagFilter.value = Array.from(tagFilter.options).some((option) => option.value === selected)
+    ? selected
+    : '';
+}
+
 function renderedNameLabel(name) {
   if (!name.isIdn || !name.unicodeName || name.unicodeName === name.name) {
     return '';
@@ -428,9 +499,11 @@ function hasEmoji(name) {
 function domainTags(name, listing, fulfillment) {
   return [
     ...(name.tags || []),
+    ...customTagsForName(name.name).map(customTagFilterValue),
     name.isIdn ? 'idn' : '',
     hasEmoji(name) ? 'emoji' : '',
     listing || fulfillment ? 'shakedex' : '',
+    name.shakedexListingOnly ? 'listing-only' : '',
     fulfillment ? 'shakedex-bought' : '',
     listing && !fulfillment ? 'shakedex-listed' : '',
     listing && !fulfillment ? shakedexPriceLabel(listing) : ''
@@ -438,7 +511,11 @@ function domainTags(name, listing, fulfillment) {
 }
 
 function visibleDomainTags(name, listing, fulfillment) {
-  const tags = [];
+  const tags = customTagsForName(name.name).map((tag) => ({
+    label: tag,
+    className: 'custom-tag',
+    title: `Your tag: ${tag}`
+  }));
   if (fulfillment) {
     tags.push({
       label: 'Bought',
@@ -489,6 +566,53 @@ function visibleDomainTags(name, listing, fulfillment) {
   }
 
   return tags;
+}
+
+function openTagEditor(name) {
+  editingDomainName = name;
+  tagDomainName.textContent = name;
+  tagInput.value = customTagsForName(name).join(', ');
+  tagDialogError.textContent = '';
+  tagDialog.showModal();
+  tagInput.focus();
+  tagInput.select();
+}
+
+function closeTagEditor() {
+  editingDomainName = '';
+  tagDialog.close();
+}
+
+async function saveTagEditor() {
+  if (!editingDomainName) return;
+
+  tagSaveButton.disabled = true;
+  tagDialogError.textContent = '';
+  const tags = tagInput.value.split(',').map((tag) => tag.trim()).filter(Boolean);
+
+  try {
+    domainTagStore = await window.hnsInvestments.setDomainTags(editingDomainName, tags);
+    closeTagEditor();
+    populateTagFilter();
+    if (currentResult) {
+      renderNames(currentResult.names, currentResult);
+      renderExports(currentResult);
+    }
+    saveSettings();
+  } catch (error) {
+    tagDialogError.textContent = error.message || String(error);
+  } finally {
+    tagSaveButton.disabled = false;
+  }
+}
+
+async function loadDomainTags() {
+  try {
+    domainTagStore = await window.hnsInvestments.loadDomainTags();
+  } catch (_error) {
+    domainTagStore = { version: 1, domains: {} };
+  }
+  populateTagFilter();
 }
 
 function formatHns(value) {
@@ -1204,6 +1328,7 @@ function exportRows(result, scope = 'all') {
       };
     })(),
     name: name.name,
+    tags: customTagsForName(name.name).join(', '),
     render: renderedNameLabel(name),
     status: name.status || '',
     wallet: name.wallet || '',
@@ -1255,6 +1380,7 @@ function exportCsv(scope = 'all') {
     shakedexPriceHns: '',
     shakedexListingOnly: '',
     name: '',
+    tags: '',
     render: '',
     status: '',
     wallet: '',
@@ -1306,7 +1432,8 @@ function renderNames(names, result) {
     const matchesQuery = !query
       || rawName.toLowerCase().includes(query)
       || renderLabel.includes(query)
-      || wallet.toLowerCase().includes(query);
+      || wallet.toLowerCase().includes(query)
+      || customTagsForName(name.name).some((tag) => tag.toLowerCase().includes(query));
     const matchesWallet = !selectedWallet || wallet === selectedWallet;
     const matchesLength = matchesLengthFilter(name, selectedLength);
     const matchesIdn = !selectedIdn
@@ -1345,7 +1472,6 @@ function renderNames(names, result) {
     row.classList.toggle('shakedex-bought-row', !!fulfillment);
     row.title = fulfillment ? shakedexFulfillmentTitle(fulfillment) : shakedexListingTitle(listing);
 
-    const tags = domainTags(name, listing, fulfillment);
     const displayTags = visibleDomainTags(name, listing, fulfillment);
 
     const nameCell = document.createElement('td');
@@ -1379,20 +1505,27 @@ function renderNames(names, result) {
     const tagsCell = document.createElement('td');
     tagsCell.className = 'tags-cell';
     tagsCell.title = displayTags.map((tag) => tag.title || tag.label).join(' · ');
-    for (const tag of displayTags.slice(0, 3)) {
+    for (const tag of displayTags.slice(0, 2)) {
       const badge = document.createElement('span');
       badge.className = `tag-badge ${tag.className || ''}`.trim();
       badge.textContent = tag.label;
       badge.title = tag.title || tag.label;
       tagsCell.appendChild(badge);
     }
-    if (displayTags.length > 3) {
+    if (displayTags.length > 2) {
       const moreBadge = document.createElement('span');
       moreBadge.className = 'tag-badge more-tag';
-      moreBadge.textContent = `+${displayTags.length - 3}`;
-      moreBadge.title = displayTags.slice(3).map((tag) => tag.title || tag.label).join(' · ');
+      moreBadge.textContent = `+${displayTags.length - 2}`;
+      moreBadge.title = displayTags.slice(2).map((tag) => tag.title || tag.label).join(' · ');
       tagsCell.appendChild(moreBadge);
     }
+    const editTagsButton = document.createElement('button');
+    editTagsButton.className = 'edit-tags-button';
+    editTagsButton.type = 'button';
+    editTagsButton.textContent = customTagsForName(name.name).length ? 'Edit' : '+ Tag';
+    editTagsButton.setAttribute('aria-label', `Edit tags for ${name.name}`);
+    editTagsButton.addEventListener('click', () => openTagEditor(name.name));
+    tagsCell.appendChild(editTagsButton);
 
     row.append(nameCell, renderCell, statusCell, walletCell, expiresCell, tagsCell);
 
@@ -1581,6 +1714,15 @@ tagFilter.addEventListener('change', () => {
   saveSettings();
   renderNames(currentResult.names, currentResult);
 });
+tagForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  saveTagEditor();
+});
+tagDialogClose.addEventListener('click', closeTagEditor);
+tagCancelButton.addEventListener('click', closeTagEditor);
+tagDialog.addEventListener('click', (event) => {
+  if (event.target === tagDialog) closeTagEditor();
+});
 for (const button of sortButtons) {
   button.addEventListener('click', () => {
     const key = button.dataset.sort;
@@ -1638,4 +1780,4 @@ updateCoinSortButtons();
 showShakedexTab(activeShakedexTab);
 showView(activeView);
 loadRegistry();
-runScan();
+loadDomainTags().then(runScan);

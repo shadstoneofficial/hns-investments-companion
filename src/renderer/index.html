@@ -66,12 +66,6 @@
             </select>
             <select id="tagFilter" aria-label="Filter by tag">
               <option value="">Any tag</option>
-              <option value="shakedex">Shakedex</option>
-              <option value="shakedex-listed">Listed</option>
-              <option value="shakedex-bought">Bought</option>
-              <option value="listing-only">Listing-only</option>
-              <option value="idn">IDN</option>
-              <option value="emoji">Emoji</option>
             </select>
             <button id="refreshPortfolioButton" class="primary-action" type="button">Refresh</button>
           </div>
@@ -615,6 +609,28 @@
         </section>
       </section>
     </main>
+
+    <dialog id="tagDialog" class="tag-dialog" aria-labelledby="tagDialogTitle">
+      <form id="tagForm" method="dialog">
+        <div class="tag-dialog-header">
+          <div>
+            <p class="eyebrow">Local metadata</p>
+            <h3 id="tagDialogTitle">Edit tags</h3>
+          </div>
+          <button id="tagDialogClose" class="icon-action" type="button" aria-label="Close">×</button>
+        </div>
+        <p class="tag-dialog-help">Add comma-separated tags such as “AI agent, first name”. A domain can have more than one tag.</p>
+        <label class="tag-field">
+          <span>Tags for <strong id="tagDomainName"></strong></span>
+          <input id="tagInput" type="text" maxlength="680" autocomplete="off" placeholder="AI agent, first name">
+        </label>
+        <p id="tagDialogError" class="tag-dialog-error" role="alert"></p>
+        <div class="tag-dialog-actions">
+          <button id="tagCancelButton" class="secondary-action" type="button">Cancel</button>
+          <button id="tagSaveButton" class="primary-action" type="submit">Save tags</button>
+        </div>
+      </form>
+    </dialog>
 
     <script src="./renderer.js"></script>
   </body>

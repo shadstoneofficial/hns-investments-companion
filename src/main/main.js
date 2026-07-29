@@ -2,8 +2,10 @@ const path = require('node:path');
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const { scanBobLearnHns } = require('../scanner/bobLearnHnsScanner');
 const { loadCommunityRegistry } = require('../registry/communityRegistry');
+const { readDomainTagStore, writeDomainTags } = require('./domainTagStore');
 
 let mainWindow;
+const domainTagStorePath = () => path.join(app.getPath('userData'), 'domain-tags.json');
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -27,6 +29,10 @@ function createWindow() {
 app.whenReady().then(() => {
   ipcMain.handle('portfolio:scan', async () => scanBobLearnHns());
   ipcMain.handle('community:registry', async () => loadCommunityRegistry());
+  ipcMain.handle('domainTags:load', async () => readDomainTagStore(domainTagStorePath()));
+  ipcMain.handle('domainTags:set', async (_event, name, tags) => (
+    writeDomainTags(domainTagStorePath(), name, tags)
+  ));
   ipcMain.handle('app:openPath', async (_event, targetPath) => {
     if (!targetPath || typeof targetPath !== 'string') {
       return { ok: false, error: 'Invalid path' };

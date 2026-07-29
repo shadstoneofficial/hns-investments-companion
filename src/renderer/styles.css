@@ -979,6 +979,12 @@ th {
   background: #f6f8fb;
 }
 
+.custom-tag {
+  color: #075d57;
+  border-color: #acd8d2;
+  background: #edf9f7;
+}
+
 .price-tag {
   color: #455166;
   border-color: #e5dccd;
@@ -1032,6 +1038,117 @@ th {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
+}
+
+.edit-tags-button {
+  flex: 0 0 auto;
+  height: 24px;
+  margin-left: auto;
+  padding: 0 7px;
+  border: 1px dashed #9ebdb8;
+  border-radius: 999px;
+  color: var(--accent);
+  background: #f7fcfb;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.edit-tags-button:hover,
+.edit-tags-button:focus-visible {
+  color: #ffffff;
+  border-color: var(--accent);
+  outline: none;
+  background: var(--accent);
+}
+
+.tag-dialog {
+  width: min(520px, calc(100vw - 40px));
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  background: var(--field);
+  box-shadow: 0 24px 70px rgb(20 61 58 / 24%);
+}
+
+.tag-dialog::backdrop {
+  background: rgb(20 35 33 / 42%);
+}
+
+.tag-dialog form {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.tag-dialog-header,
+.tag-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tag-dialog-header h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.icon-action {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.icon-action:hover {
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.tag-dialog-help,
+.tag-dialog-error {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.tag-field {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.tag-field input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--field);
+}
+
+.tag-field input:focus {
+  border-color: var(--accent);
+  outline: 2px solid rgb(13 107 100 / 16%);
+}
+
+.tag-dialog-error {
+  min-height: 19px;
+  color: #a13025;
+}
+
+.tag-dialog-actions {
+  justify-content: end;
 }
 
 .empty-cell {
