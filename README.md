@@ -32,7 +32,7 @@ Current status: the app detects Bob LearnHNS and uses the HNS Investments read-o
 
 The app stores UI preferences in Electron/browser local storage, including selected screen, filters, sort direction, and Shakedex sub-tab. User-created domain tags are stored separately in `domain-tags.json` inside Electron's per-user application data folder. Tags stay on the device, are independent of Bob wallets, and are included in CSV/JSON exports. These settings are local app metadata and are not meant to be committed.
 
-Optional GFAVIP Cloud Sync is opt-in and defaults to no cloud activity. See [the cloud sync design](docs/GFAVIP_CLOUD_SYNC_DESIGN.md) and [service development guide](cloud/README.md).
+Optional GFAVIP Cloud Sync is opt-in and defaults to no cloud activity. See [the cloud sync design](docs/GFAVIP_CLOUD_SYNC_DESIGN.md), [service development guide](cloud/README.md), and [approval-gated production handoff](docs/GFAVIP_CLOUD_SYNC_PRODUCTION_HANDOFF.md).
 
 ## Development
 
