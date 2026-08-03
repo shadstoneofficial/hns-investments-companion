@@ -4,6 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const {
+  applyDomainTagChanges,
   normalizeTags,
   readDomainTagStore,
   writeDomainTags
@@ -42,6 +43,24 @@ test('a missing or malformed tag file safely produces an empty store', async () 
     assert.deepEqual(await readDomainTagStore(filePath), { version: 1, domains: {} });
     await fs.writeFile(filePath, '{not json', 'utf8');
     assert.deepEqual(await readDomainTagStore(filePath), { version: 1, domains: {} });
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('cloud tag changes merge with local-only tags and honor tombstones', async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'hns-domain-tags-'));
+  const filePath = path.join(directory, 'domain-tags.json');
+
+  try {
+    await writeDomainTags(filePath, 'alice', ['Local only', 'AI agent']);
+    await applyDomainTagChanges(filePath, [
+      { type: 'tag', name: 'alice', displayLabel: 'AI agent', present: false },
+      { type: 'tag', name: 'alice', displayLabel: 'First name', present: true },
+      { type: 'tag', name: 'alice', displayLabel: 'Local only', present: false, propagateToLocal: false },
+      { type: 'domain', name: 'ignored', present: true }
+    ]);
+    assert.deepEqual((await readDomainTagStore(filePath)).domains.alice, ['Local only', 'First name']);
   } finally {
     await fs.rm(directory, { recursive: true, force: true });
   }

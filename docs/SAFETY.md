@@ -11,7 +11,22 @@ HNS Investments Companion starts read-only because Bob LearnHNS contains wallet 
 - The app must not write to Bob LearnHNS folders.
 - The app must not display or export API keys, wallet tokens, seeds, mnemonics, private keys, or raw wallet database contents.
 - The app must not expose raw UTXOs, raw wallet database records, addresses, or transaction graph data in the first balance bridge.
-- The app must not send portfolio data to public APIs in the MVP.
+- The app must not send portfolio data to public APIs. The optional first-party Cloud Sync service may receive only the scope the user explicitly selects after GFAVIP device approval.
+
+## Optional Cloud Sync
+
+Cloud Sync is disabled by default and must not make a network request when no service
+endpoint is configured. GFAVIP sign-in or device approval alone does not authorize an
+upload; the user must separately choose selected-tag or full domain-metadata sync.
+
+At every cloud level, exclude seed phrases, private keys, wallet passwords, Bob
+files, bridge credentials, owner hashes, balances, transaction evidence, and signing
+capability. Wallet display labels require separate consent. Device credentials belong
+in operating-system secure storage, and local tag edits must continue to succeed while
+the service is offline.
+
+Turning sync off or deleting the cloud copy must not delete local tags. Cloud scope
+reconciliation tombstones are therefore marked as non-propagating to local data.
 
 ## Locked Or Encrypted Wallets
 

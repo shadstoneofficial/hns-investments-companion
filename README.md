@@ -14,6 +14,7 @@ Current status: the app detects Bob LearnHNS and uses the HNS Investments read-o
 - Attention: nearest renewal heights and IDN review.
 - Shakedex: local My Listings and Fills tabs from the Bob LearnHNS bridge. Marketplace discovery is planned but not active.
 - Scan: local bridge and filesystem diagnostics.
+- Cloud Sync: optional GFAVIP account connection with local-only, selected-tag, and full domain-metadata privacy levels. The default remains local-only, and the service must be explicitly configured.
 - Exports: local CSV/JSON export.
 
 ## MVP Boundary
@@ -23,13 +24,15 @@ Current status: the app detects Bob LearnHNS and uses the HNS Investments read-o
 - Does not import seed phrases.
 - Does not sign transactions.
 - Does not write to Bob LearnHNS app support folders.
-- Does not upload wallet/name data.
+- Does not upload wallet/name data unless the user connects the optional Cloud Sync service and explicitly selects a non-local privacy level.
 - Does not query public marketplace or chain APIs unless that future feature is explicitly added as opt-in.
 - Treats locked/encrypted wallets as detected but unreadable until a safe Bob integration path is designed.
 
 ## Local Settings
 
 The app stores UI preferences in Electron/browser local storage, including selected screen, filters, sort direction, and Shakedex sub-tab. User-created domain tags are stored separately in `domain-tags.json` inside Electron's per-user application data folder. Tags stay on the device, are independent of Bob wallets, and are included in CSV/JSON exports. These settings are local app metadata and are not meant to be committed.
+
+Optional GFAVIP Cloud Sync is opt-in and defaults to no cloud activity. See [the cloud sync design](docs/GFAVIP_CLOUD_SYNC_DESIGN.md) and [service development guide](cloud/README.md).
 
 ## Development
 

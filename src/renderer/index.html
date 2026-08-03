@@ -29,6 +29,7 @@
           <button class="nav-item" type="button" data-view="news">News</button>
           <button class="nav-item" type="button" data-view="funding">Funding</button>
           <button class="nav-item" type="button" data-view="scan">Scan</button>
+          <button class="nav-item" type="button" data-view="cloudSync">Cloud Sync</button>
           <button class="nav-item" type="button" data-view="exports">Exports</button>
         </nav>
       </aside>
@@ -605,6 +606,92 @@
               <button id="exportShakedexCsvButton" class="secondary-action" type="button">Shakedex CSV</button>
             </div>
           </div>
+          </div>
+        </section>
+
+        <section id="cloudSyncView" class="view">
+          <div class="cloud-layout">
+            <div class="panel cloud-panel">
+              <div class="panel-header">
+                <h3>GFAVIP Cloud Sync</h3>
+                <span id="cloudConnectionLabel">Checking</span>
+              </div>
+              <div class="cloud-content">
+                <div id="cloudUnavailable" class="cloud-notice" hidden>
+                  <strong>Cloud service not configured</strong>
+                  <p>This build remains local-only. No domain or tag data is uploaded.</p>
+                </div>
+
+                <div id="cloudDisconnected" hidden>
+                  <div class="cloud-notice privacy">
+                    <strong>Local-only by default</strong>
+                    <p>Connecting an account does not upload anything. You choose a privacy level after approving this device in your browser.</p>
+                  </div>
+                  <div class="cloud-actions">
+                    <button id="connectCloudButton" class="primary-action" type="button">Connect GFAVIP Account</button>
+                    <button id="checkCloudConnectionButton" class="secondary-action" type="button" hidden>Check Connection</button>
+                  </div>
+                </div>
+
+                <form id="cloudPreferencesForm" hidden>
+                  <fieldset class="cloud-levels">
+                    <legend>Choose what is stored online</legend>
+                    <label class="cloud-level-card">
+                      <input type="radio" name="cloudLevel" value="none">
+                      <span><strong>No cloud sync</strong><small>Nothing uploads. Your local tags keep working as they do now.</small></span>
+                    </label>
+                    <label class="cloud-level-card">
+                      <input type="radio" name="cloudLevel" value="selected_tags">
+                      <span><strong>Sync selected tags</strong><small>Only chosen tag assignments and their domain names are stored online.</small></span>
+                    </label>
+                    <label class="cloud-level-card">
+                      <input type="radio" name="cloudLevel" value="full_account">
+                      <span><strong>Sync full account</strong><small>All domain portfolio metadata and user-created tags sync. Wallet secrets never do.</small></span>
+                    </label>
+                  </fieldset>
+
+                  <fieldset id="cloudSelectedTagsField" class="cloud-option-panel" hidden>
+                    <legend>Tags to sync</legend>
+                    <div id="cloudSelectedTags" class="cloud-tag-options"></div>
+                    <p id="cloudNoTags" class="cloud-help" hidden>Create a local domain tag first, then it will appear here.</p>
+                  </fieldset>
+
+                  <div id="cloudFullOptions" class="cloud-option-panel" hidden>
+                    <label><input id="cloudWalletLabels" type="checkbox"> Include wallet display labels</label>
+                    <p class="cloud-help">Balances, owner hashes, wallet files, keys, passwords, and signing access remain excluded.</p>
+                  </div>
+
+                  <div id="cloudNoSyncOptions" class="cloud-option-panel" hidden>
+                    <label><input id="cloudRetainData" type="checkbox"> Pause sync and retain my existing cloud copy</label>
+                    <p class="cloud-help">If unchecked, saving No cloud sync deletes the cloud copy. Local data remains.</p>
+                  </div>
+
+                  <div class="cloud-preview">
+                    <span><strong id="cloudPreviewNames">0</strong> domain names in scope</span>
+                    <span><strong id="cloudPreviewTags">0</strong> tag assignments in scope</span>
+                  </div>
+
+                  <div class="cloud-actions">
+                    <button id="saveCloudPreferencesButton" class="primary-action" type="submit">Save Privacy Level</button>
+                    <button id="syncCloudNowButton" class="secondary-action" type="button">Sync Now</button>
+                    <button id="openCloudAccountButton" class="secondary-action" type="button">Open Web Account</button>
+                  </div>
+                </form>
+
+                <div id="cloudStatusDetails" class="cloud-status-grid" hidden>
+                  <div><span>Last sync</span><strong id="cloudLastSync">Never</strong></div>
+                  <div><span>Pending</span><strong id="cloudPendingCount">0 changes</strong></div>
+                  <div><span>Device</span><strong id="cloudDeviceId">Connected</strong></div>
+                </div>
+
+                <p id="cloudMessage" class="cloud-message" role="status"></p>
+
+                <div id="cloudDangerActions" class="cloud-danger" hidden>
+                  <button id="deleteCloudDataButton" class="danger-action" type="button">Delete Cloud Data</button>
+                  <button id="disconnectCloudButton" class="secondary-action" type="button">Disconnect This Device</button>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </section>

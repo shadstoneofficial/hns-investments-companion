@@ -75,7 +75,35 @@ async function writeDomainTags(filePath, name, tags) {
   return store;
 }
 
+async function applyDomainTagChanges(filePath, changes) {
+  const store = await readDomainTagStore(filePath);
+  for (const change of Array.isArray(changes) ? changes : []) {
+    if (change?.type !== 'tag') continue;
+    if (change.propagateToLocal === false) continue;
+    const domain = normalizeDomainName(change.name);
+    const tag = normalizeTags([change.displayLabel || change.tag])[0];
+    if (!domain || !tag) continue;
+    const current = normalizeTags(store.domains[domain] || []);
+    const key = tag.toLowerCase();
+    const next = change.present === false
+      ? current.filter((item) => item.toLowerCase() !== key)
+      : normalizeTags([...current, tag]);
+    if (next.length) store.domains[domain] = next;
+    else delete store.domains[domain];
+  }
+
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  const temporaryPath = `${filePath}.${process.pid}.tmp`;
+  await fs.writeFile(temporaryPath, `${JSON.stringify(store, null, 2)}\n`, {
+    encoding: 'utf8',
+    mode: 0o600
+  });
+  await fs.rename(temporaryPath, filePath);
+  return store;
+}
+
 module.exports = {
+  applyDomainTagChanges,
   normalizeStore,
   normalizeTags,
   readDomainTagStore,

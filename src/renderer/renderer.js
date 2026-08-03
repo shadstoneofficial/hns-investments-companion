@@ -88,6 +88,33 @@ const tagSaveButton = document.getElementById('tagSaveButton');
 const tagDomainName = document.getElementById('tagDomainName');
 const tagInput = document.getElementById('tagInput');
 const tagDialogError = document.getElementById('tagDialogError');
+const cloudConnectionLabel = document.getElementById('cloudConnectionLabel');
+const cloudUnavailable = document.getElementById('cloudUnavailable');
+const cloudDisconnected = document.getElementById('cloudDisconnected');
+const connectCloudButton = document.getElementById('connectCloudButton');
+const checkCloudConnectionButton = document.getElementById('checkCloudConnectionButton');
+const cloudPreferencesForm = document.getElementById('cloudPreferencesForm');
+const cloudLevelInputs = Array.from(document.querySelectorAll('input[name="cloudLevel"]'));
+const cloudSelectedTagsField = document.getElementById('cloudSelectedTagsField');
+const cloudSelectedTags = document.getElementById('cloudSelectedTags');
+const cloudNoTags = document.getElementById('cloudNoTags');
+const cloudFullOptions = document.getElementById('cloudFullOptions');
+const cloudNoSyncOptions = document.getElementById('cloudNoSyncOptions');
+const cloudWalletLabels = document.getElementById('cloudWalletLabels');
+const cloudRetainData = document.getElementById('cloudRetainData');
+const cloudPreviewNames = document.getElementById('cloudPreviewNames');
+const cloudPreviewTags = document.getElementById('cloudPreviewTags');
+const saveCloudPreferencesButton = document.getElementById('saveCloudPreferencesButton');
+const syncCloudNowButton = document.getElementById('syncCloudNowButton');
+const openCloudAccountButton = document.getElementById('openCloudAccountButton');
+const cloudStatusDetails = document.getElementById('cloudStatusDetails');
+const cloudLastSync = document.getElementById('cloudLastSync');
+const cloudPendingCount = document.getElementById('cloudPendingCount');
+const cloudDeviceId = document.getElementById('cloudDeviceId');
+const cloudMessage = document.getElementById('cloudMessage');
+const cloudDangerActions = document.getElementById('cloudDangerActions');
+const deleteCloudDataButton = document.getElementById('deleteCloudDataButton');
+const disconnectCloudButton = document.getElementById('disconnectCloudButton');
 const dashboardTiles = Array.from(document.querySelectorAll('.dashboard-tile'));
 const views = {
   dashboard: document.getElementById('dashboardView'),
@@ -101,6 +128,7 @@ const views = {
   news: document.getElementById('newsView'),
   funding: document.getElementById('fundingView'),
   scan: document.getElementById('scanView'),
+  cloudSync: document.getElementById('cloudSyncView'),
   exports: document.getElementById('exportsView')
 };
 const viewLabels = {
@@ -115,6 +143,7 @@ const viewLabels = {
   news: { eyebrow: 'Community Registry', title: 'News' },
   funding: { eyebrow: 'Community Registry', title: 'Funding' },
   scan: { eyebrow: 'Bob LearnHNS', title: 'Scan' },
+  cloudSync: { eyebrow: 'Optional Backup', title: 'Cloud Sync' },
   exports: { eyebrow: 'Domains', title: 'Exports' }
 };
 const publicViews = new Set(['applications', 'news', 'funding']);
@@ -144,6 +173,8 @@ const HNS_BLOCK_MINUTES = 10;
 let currentResult = null;
 let communityRegistry = null;
 let domainTagStore = { version: 1, domains: {} };
+let cloudSyncState = null;
+let cloudPairingPollTimer = null;
 let editingDomainName = '';
 let activeView = 'dashboard';
 let sortState = {
@@ -295,9 +326,11 @@ function showView(viewName) {
   bobActions.hidden = !bobRefreshViews.has(viewName);
   registryActions.hidden = !(publicViews.has(viewName) || dashboardViews.has(viewName));
   summaryStats.hidden = publicViews.has(viewName) || dashboardViews.has(viewName);
+  if (viewName === 'cloudSync') summaryStats.hidden = true;
   communityStats.hidden = !publicViews.has(viewName);
   registrySourceButton.textContent = registrySourceLabels[viewName] || 'Registry Source';
   registrySourceButton.title = registrySourceUrls[viewName] || REGISTRY_DATA_URL;
+  if (viewName === 'cloudSync') loadCloudSyncState();
   saveSettings();
 }
 
@@ -613,6 +646,272 @@ async function loadDomainTags() {
     domainTagStore = { version: 1, domains: {} };
   }
   populateTagFilter();
+}
+
+function localCloudTagLabels() {
+  const labels = new Map();
+  for (const tag of Object.values(domainTagStore.domains || {}).flat()) {
+    const label = String(tag || '').trim();
+    if (label && !labels.has(label.toLowerCase())) labels.set(label.toLowerCase(), label);
+  }
+  for (const tag of cloudSyncState?.preferences?.selectedTags || []) {
+    const label = String(tag || '').trim();
+    if (label && !labels.has(label.toLowerCase())) labels.set(label.toLowerCase(), label);
+  }
+  return [...labels.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+
+function selectedCloudLevel() {
+  return cloudLevelInputs.find((input) => input.checked)?.value || 'none';
+}
+
+function selectedCloudTagLabels() {
+  return Array.from(cloudSelectedTags.querySelectorAll('input[type="checkbox"]:checked'))
+    .map((input) => input.value);
+}
+
+function updateCloudPreview() {
+  const level = selectedCloudLevel();
+  const selectedKeys = new Set(selectedCloudTagLabels().map((tag) => tag.toLowerCase()));
+  let names = 0;
+  let assignments = 0;
+
+  if (level === 'full_account') {
+    names = currentResult?.names?.length || 0;
+    assignments = Object.values(domainTagStore.domains || {})
+      .reduce((total, tags) => total + tags.length, 0);
+  } else if (level === 'selected_tags') {
+    const namesInScope = new Set();
+    for (const [name, tags] of Object.entries(domainTagStore.domains || {})) {
+      for (const tag of tags) {
+        if (selectedKeys.has(tag.toLowerCase())) {
+          assignments += 1;
+          namesInScope.add(name);
+        }
+      }
+    }
+    names = namesInScope.size;
+  }
+
+  setText(cloudPreviewNames, names);
+  setText(cloudPreviewTags, assignments);
+  cloudSelectedTagsField.hidden = level !== 'selected_tags';
+  cloudFullOptions.hidden = level !== 'full_account';
+  cloudNoSyncOptions.hidden = level !== 'none';
+}
+
+function renderCloudTagOptions(selectedTags) {
+  const selectedKeys = new Set((selectedTags || []).map((tag) => tag.toLowerCase()));
+  const labels = localCloudTagLabels();
+  cloudSelectedTags.innerHTML = '';
+  cloudNoTags.hidden = labels.length > 0;
+
+  for (const label of labels) {
+    const option = document.createElement('label');
+    option.className = 'cloud-tag-option';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = label;
+    checkbox.checked = selectedKeys.has(label.toLowerCase());
+    checkbox.addEventListener('change', updateCloudPreview);
+    const text = document.createElement('span');
+    text.textContent = label;
+    option.append(checkbox, text);
+    cloudSelectedTags.appendChild(option);
+  }
+}
+
+function setCloudMessage(message, isError = false) {
+  cloudMessage.textContent = message || '';
+  cloudMessage.classList.toggle('error', isError);
+}
+
+function setCloudBusy(busy) {
+  for (const button of [
+    connectCloudButton,
+    checkCloudConnectionButton,
+    saveCloudPreferencesButton,
+    syncCloudNowButton,
+    openCloudAccountButton,
+    deleteCloudDataButton,
+    disconnectCloudButton
+  ]) {
+    button.disabled = busy;
+  }
+}
+
+function renderCloudSync(state) {
+  cloudSyncState = state;
+  const unavailable = !state.endpointConfigured;
+  cloudUnavailable.hidden = !unavailable;
+  cloudDisconnected.hidden = unavailable || state.connected;
+  cloudPreferencesForm.hidden = !state.connected;
+  cloudStatusDetails.hidden = !state.connected;
+  cloudDangerActions.hidden = !state.connected;
+
+  if (unavailable) {
+    setText(cloudConnectionLabel, 'Local only');
+    setCloudMessage('');
+    return;
+  }
+
+  if (!state.credentialStorageAvailable) {
+    setText(cloudConnectionLabel, 'Unavailable');
+    connectCloudButton.disabled = true;
+    setCloudMessage('Secure operating-system credential storage is unavailable.', true);
+    return;
+  }
+
+  if (!state.connected) {
+    setText(cloudConnectionLabel, state.pairing ? 'Waiting for browser' : 'Not connected');
+    checkCloudConnectionButton.hidden = !state.pairing;
+    connectCloudButton.textContent = state.pairing ? 'Restart Connection' : 'Connect GFAVIP Account';
+    setCloudMessage(state.pairing
+      ? 'Approve this device in your browser, then check the connection.'
+      : 'Nothing is uploaded unless you connect and choose a cloud level.');
+    return;
+  }
+
+  setText(cloudConnectionLabel, state.preferences.level === 'none' ? 'Connected · local only' : 'Connected');
+  for (const input of cloudLevelInputs) {
+    input.checked = input.value === state.preferences.level;
+  }
+  cloudWalletLabels.checked = state.preferences.syncWalletLabels === true;
+  cloudRetainData.checked = state.preferences.retainCloudData === true;
+  renderCloudTagOptions(state.preferences.selectedTags);
+  updateCloudPreview();
+  setText(cloudLastSync, state.lastSyncAt ? new Date(state.lastSyncAt).toLocaleString() : 'Never');
+  setText(cloudPendingCount, `${state.pendingCount} change${state.pendingCount === 1 ? '' : 's'}`);
+  setText(cloudDeviceId, state.deviceId ? state.deviceId.slice(0, 8) : 'Connected');
+  setCloudMessage(state.lastError || 'Cloud Sync is ready.', !!state.lastError);
+}
+
+async function loadCloudSyncState() {
+  try {
+    renderCloudSync(await window.hnsInvestments.getCloudSyncState());
+    scheduleCloudPairingPoll();
+  } catch (error) {
+    setText(cloudConnectionLabel, 'Error');
+    setCloudMessage(error.message || String(error), true);
+  }
+}
+
+function scheduleCloudPairingPoll() {
+  clearTimeout(cloudPairingPollTimer);
+  if (!cloudSyncState?.pairing || cloudSyncState.connected) return;
+  cloudPairingPollTimer = setTimeout(async () => {
+    try {
+      const state = await window.hnsInvestments.pollCloudPairing();
+      renderCloudSync(state);
+      if (state.connected) setCloudMessage('GFAVIP account connected. No data has uploaded yet.');
+    } catch (error) {
+      setCloudMessage(error.message || String(error), true);
+    }
+    scheduleCloudPairingPoll();
+  }, 2500);
+}
+
+async function startCloudPairing() {
+  setCloudBusy(true);
+  setCloudMessage('Opening GFAVIP sign-in in your browser…');
+  try {
+    renderCloudSync(await window.hnsInvestments.startCloudPairing('HNS Investments desktop'));
+    scheduleCloudPairingPoll();
+  } catch (error) {
+    setCloudMessage(error.message || String(error), true);
+  } finally {
+    setCloudBusy(false);
+  }
+}
+
+async function pollCloudPairing() {
+  setCloudBusy(true);
+  try {
+    const state = await window.hnsInvestments.pollCloudPairing();
+    renderCloudSync(state);
+    if (state.connected) setCloudMessage('GFAVIP account connected. No data has uploaded yet.');
+    else setCloudMessage('Still waiting for approval in your browser.');
+  } catch (error) {
+    setCloudMessage(error.message || String(error), true);
+  } finally {
+    setCloudBusy(false);
+  }
+}
+
+async function saveCloudPreferences(event) {
+  event.preventDefault();
+  const level = selectedCloudLevel();
+  const previousLevel = cloudSyncState?.preferences?.level || 'none';
+  if (level === 'none' && previousLevel !== 'none' && !cloudRetainData.checked) {
+    const approved = window.confirm('Turn off sync and delete the cloud copy? Your local domain tags will remain on this computer.');
+    if (!approved) return;
+  }
+
+  setCloudBusy(true);
+  setCloudMessage('Saving privacy level…');
+  try {
+    const state = await window.hnsInvestments.setCloudSyncPreferences({
+      level,
+      selectedTags: selectedCloudTagLabels(),
+      syncWalletLabels: cloudWalletLabels.checked,
+      retainCloudData: cloudRetainData.checked
+    });
+    renderCloudSync(state);
+    setCloudMessage(level === 'none'
+      ? (state.preferences.retainCloudData ? 'Cloud sync paused; the cloud copy was retained.' : 'Cloud sync is off and the cloud copy was deleted.')
+      : 'Privacy level saved. Choose Sync Now to upload the previewed scope.');
+  } catch (error) {
+    setCloudMessage(error.message || String(error), true);
+  } finally {
+    setCloudBusy(false);
+  }
+}
+
+async function syncCloudNow() {
+  setCloudBusy(true);
+  setCloudMessage('Synchronizing…');
+  try {
+    const result = await window.hnsInvestments.syncCloudNow();
+    domainTagStore = result.domainTags;
+    populateTagFilter();
+    if (currentResult) renderNames(currentResult.names, currentResult);
+    renderCloudSync(result.state);
+    setCloudMessage('Cloud Sync is up to date.');
+  } catch (error) {
+    await loadCloudSyncState();
+    setCloudMessage(error.message || String(error), true);
+  } finally {
+    setCloudBusy(false);
+  }
+}
+
+async function deleteCloudData() {
+  const approved = window.confirm('Permanently delete all HNS Investments cloud sync data? Local domain tags on this computer will remain.');
+  if (!approved) return;
+  setCloudBusy(true);
+  try {
+    renderCloudSync(await window.hnsInvestments.deleteCloudData());
+    setCloudMessage('Cloud data deleted. Local tags were not removed.');
+  } catch (error) {
+    setCloudMessage(error.message || String(error), true);
+  } finally {
+    setCloudBusy(false);
+  }
+}
+
+async function disconnectCloudSync() {
+  const approved = window.confirm('Disconnect this computer? Existing cloud data will remain until you delete it or revoke the device from the web account.');
+  if (!approved) return;
+  setCloudBusy(true);
+  try {
+    clearTimeout(cloudPairingPollTimer);
+    renderCloudSync(await window.hnsInvestments.disconnectCloudSync());
+    setCloudMessage('This computer is disconnected. Local tags remain available.');
+  } catch (error) {
+    setCloudMessage(error.message || String(error), true);
+  } finally {
+    setCloudBusy(false);
+  }
 }
 
 function formatHns(value) {
@@ -1723,6 +2022,18 @@ tagCancelButton.addEventListener('click', closeTagEditor);
 tagDialog.addEventListener('click', (event) => {
   if (event.target === tagDialog) closeTagEditor();
 });
+connectCloudButton.addEventListener('click', startCloudPairing);
+checkCloudConnectionButton.addEventListener('click', pollCloudPairing);
+cloudPreferencesForm.addEventListener('submit', saveCloudPreferences);
+for (const input of cloudLevelInputs) {
+  input.addEventListener('change', updateCloudPreview);
+}
+syncCloudNowButton.addEventListener('click', syncCloudNow);
+openCloudAccountButton.addEventListener('click', () => {
+  window.hnsInvestments.openCloudAccount();
+});
+deleteCloudDataButton.addEventListener('click', deleteCloudData);
+disconnectCloudButton.addEventListener('click', disconnectCloudSync);
 for (const button of sortButtons) {
   button.addEventListener('click', () => {
     const key = button.dataset.sort;
@@ -1780,4 +2091,5 @@ updateCoinSortButtons();
 showShakedexTab(activeShakedexTab);
 showView(activeView);
 loadRegistry();
+loadCloudSyncState();
 loadDomainTags().then(runScan);
