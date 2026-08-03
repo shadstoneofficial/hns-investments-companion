@@ -121,7 +121,22 @@ function htmlPage(title, content) {
 }
 
 function normalizeConfig(config = {}) {
-  const publicBaseUrl = String(config.publicBaseUrl || 'http://127.0.0.1:4319').replace(/\/$/, '');
+  const configuredBaseUrl = String(config.publicBaseUrl || 'http://127.0.0.1:4319').trim();
+  let parsedBaseUrl;
+  try {
+    parsedBaseUrl = new URL(configuredBaseUrl);
+  } catch (_error) {
+    throw new Error('PUBLIC_BASE_URL must be an absolute HTTP or HTTPS origin.');
+  }
+  if (!['http:', 'https:'].includes(parsedBaseUrl.protocol)
+      || parsedBaseUrl.username
+      || parsedBaseUrl.password
+      || parsedBaseUrl.pathname !== '/'
+      || parsedBaseUrl.search
+      || parsedBaseUrl.hash) {
+    throw new Error('PUBLIC_BASE_URL must be an HTTP or HTTPS origin without credentials, a path, query parameters, or a fragment.');
+  }
+  const publicBaseUrl = parsedBaseUrl.origin;
   return {
     publicBaseUrl,
     walletAuthorizeUrl: config.walletAuthorizeUrl || 'https://wallet.gfavip.com/api/auth/sso/authorize',
@@ -396,10 +411,21 @@ function createCloudServer(options = {}) {
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
       const stateRecord = state ? authStates.get(hashSecret(state)) : null;
-      if (!code || !stateRecord || new Date(stateRecord.expiresAt).getTime() <= now().getTime()) {
+      if (!stateRecord || new Date(stateRecord.expiresAt).getTime() <= now().getTime()) {
+        if (state) authStates.delete(hashSecret(state));
         throw new SyncError('invalid_auth_callback', 'The sign-in request is missing, invalid, or expired.', 400);
       }
       authStates.delete(hashSecret(state));
+      const walletError = url.searchParams.get('error');
+      if (walletError || !code) {
+        throw new SyncError(
+          'wallet_authorization_failed',
+          walletError === 'access_denied'
+            ? 'GFAVIP sign-in was cancelled.'
+            : 'GFAVIP Wallet did not authorize this sign-in.',
+          400
+        );
+      }
       const identity = await exchangeCode(code);
       if (!identity?.user_id) throw new SyncError('invalid_identity', 'GFAVIP sign-in failed.', 401);
       const { token } = createSession(identity.user_id);

@@ -3,7 +3,7 @@ const test = require('node:test');
 const { once } = require('node:events');
 const { createCloudServer } = require('../cloud/src/httpServer');
 
-async function withServer(run) {
+async function withServer(run, options = {}) {
   const exchangedCodes = [];
   const cloud = createCloudServer({
     config: {
@@ -12,6 +12,7 @@ async function withServer(run) {
       serviceId: 'hns-investments-test',
       cookieSecure: false
     },
+    now: options.now,
     exchangeCode: async (code) => {
       exchangedCodes.push(code);
       return { user_id: 'gfavip-user-1', email: 'ignored@example.test' };
@@ -170,6 +171,104 @@ test('a forged callback identity is ignored and invalid auth state fails closed'
     assert.equal((await json(response)).error, 'invalid_auth_callback');
     assert.deepEqual(context.exchangedCodes, []);
   });
+});
+
+test('authorization state is single-use after a successful callback', async () => {
+  await withServer(async (context) => {
+    const pairingResponse = await fetch(`${context.baseUrl}/api/v1/device-pairings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceName: 'Replay test Mac' })
+    });
+    const pairing = await json(pairingResponse);
+    const login = await fetch(
+      `${context.baseUrl}/auth/login?pairing=${encodeURIComponent(pairing.id)}`,
+      { redirect: 'manual' }
+    );
+    const state = new URL(login.headers.get('location')).searchParams.get('state');
+
+    const first = await fetch(
+      `${context.baseUrl}/auth/callback?code=first-code&state=${encodeURIComponent(state)}`,
+      { redirect: 'manual' }
+    );
+    assert.equal(first.status, 303);
+
+    const replay = await fetch(
+      `${context.baseUrl}/auth/callback?code=replay-code&state=${encodeURIComponent(state)}`,
+      { redirect: 'manual' }
+    );
+    assert.equal(replay.status, 400);
+    assert.equal((await json(replay)).error, 'invalid_auth_callback');
+    assert.deepEqual(context.exchangedCodes, ['first-code']);
+  });
+});
+
+test('Wallet cancellation consumes state and never exchanges a code', async () => {
+  await withServer(async (context) => {
+    const pairingResponse = await fetch(`${context.baseUrl}/api/v1/device-pairings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceName: 'Cancelled pairing Mac' })
+    });
+    const pairing = await json(pairingResponse);
+    const login = await fetch(
+      `${context.baseUrl}/auth/login?pairing=${encodeURIComponent(pairing.id)}`,
+      { redirect: 'manual' }
+    );
+    const state = new URL(login.headers.get('location')).searchParams.get('state');
+
+    const cancelled = await fetch(
+      `${context.baseUrl}/auth/callback?error=access_denied&state=${encodeURIComponent(state)}`,
+      { redirect: 'manual' }
+    );
+    assert.equal(cancelled.status, 400);
+    assert.equal((await json(cancelled)).error, 'wallet_authorization_failed');
+
+    const replay = await fetch(
+      `${context.baseUrl}/auth/callback?code=late-code&state=${encodeURIComponent(state)}`,
+      { redirect: 'manual' }
+    );
+    assert.equal(replay.status, 400);
+    assert.equal((await json(replay)).error, 'invalid_auth_callback');
+    assert.deepEqual(context.exchangedCodes, []);
+  });
+});
+
+test('expired authorization state fails closed before code exchange', async () => {
+  let currentTime = new Date('2026-08-03T00:00:00.000Z');
+  await withServer(async (context) => {
+    const pairingResponse = await fetch(`${context.baseUrl}/api/v1/device-pairings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceName: 'Expired state Mac' })
+    });
+    const pairing = await json(pairingResponse);
+    const login = await fetch(
+      `${context.baseUrl}/auth/login?pairing=${encodeURIComponent(pairing.id)}`,
+      { redirect: 'manual' }
+    );
+    const state = new URL(login.headers.get('location')).searchParams.get('state');
+    currentTime = new Date('2026-08-03T00:10:01.000Z');
+
+    const expired = await fetch(
+      `${context.baseUrl}/auth/callback?code=expired-code&state=${encodeURIComponent(state)}`,
+      { redirect: 'manual' }
+    );
+    assert.equal(expired.status, 400);
+    assert.equal((await json(expired)).error, 'invalid_auth_callback');
+    assert.deepEqual(context.exchangedCodes, []);
+  }, { now: () => currentTime });
+});
+
+test('PUBLIC_BASE_URL must be an origin so the callback path stays exact', () => {
+  assert.throws(
+    () => createCloudServer({ config: { publicBaseUrl: 'https://sync.example.test/base' } }),
+    /must be an HTTP or HTTPS origin/
+  );
+  assert.throws(
+    () => createCloudServer({ config: { publicBaseUrl: 'https://sync.example.test/?tenant=one' } }),
+    /must be an HTTP or HTTPS origin/
+  );
 });
 
 test('web account can configure privacy, manage tags, export, and revoke a device', async () => {

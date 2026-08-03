@@ -1,5 +1,9 @@
 # GFAVIP Cloud Sync Production Handoff
 
+See `GFAVIP_WALLET_SSO_INTEGRATION_SPEC.md` for the source-verified Wallet
+authorization, exchange, state, identity, registry, error, logout, and test
+contract reviewed on 2026-08-03.
+
 The Cloud Sync implementation is complete locally but is not deployed, registered in
 the GFAVIP Wallet catalog, or enabled in desktop release builds. Those actions require
 explicit owner approval and the production values below.

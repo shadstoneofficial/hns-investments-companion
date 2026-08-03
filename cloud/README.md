@@ -8,6 +8,9 @@ The service is not deployed or registered in the GFAVIP Wallet catalog by this
 repository. Production hostname, callback, service ID, owner, support contact, and
 deployment approval are still required.
 
+The verified Wallet-side contract and onboarding conditions are recorded in
+`../docs/GFAVIP_WALLET_SSO_INTEGRATION_SPEC.md`.
+
 ## Implemented boundaries
 
 - New accounts default to `none`; pairing or GFAVIP sign-in alone uploads nothing.
