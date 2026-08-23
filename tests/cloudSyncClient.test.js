@@ -42,6 +42,45 @@ test('cloud client is local-only by default and rejects unsafe endpoints', async
   }
 });
 
+test('reading cloud state does not initialize the credential vault', async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'hns-cloud-client-'));
+  let availabilityChecks = 0;
+  const vault = fakeVault();
+  Object.defineProperty(vault, 'available', {
+    get() {
+      availabilityChecks += 1;
+      return true;
+    }
+  });
+
+  try {
+    const client = createCloudSyncClient({
+      statePath: path.join(directory, 'state.json'),
+      endpoint: 'https://sync.example.test',
+      vault,
+      fetchImpl: async (url) => {
+        assert.equal(url, 'https://sync.example.test/api/v1/device-pairings');
+        return response(201, {
+          id: 'pair-1',
+          pollToken: 'poll-secret',
+          authorizeUrl: 'https://sync.example.test/auth/login?pairing=pair-1',
+          expiresAt: '2030-01-01T00:00:00.000Z'
+        });
+      }
+    });
+
+    const state = await client.getState();
+    assert.equal(state.credentialStorageAvailable, null);
+    assert.equal(availabilityChecks, 0);
+
+    const pairingState = await client.startPairing('Janice Mac');
+    assert.equal(pairingState.credentialStorageAvailable, true);
+    assert.equal(availabilityChecks, 1);
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('pairing credentials are encrypted in local state and approved token enables sync', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'hns-cloud-client-'));
   const calls = [];

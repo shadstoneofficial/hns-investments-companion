@@ -759,7 +759,7 @@ function renderCloudSync(state) {
     return;
   }
 
-  if (!state.credentialStorageAvailable) {
+  if (state.credentialStorageAvailable === false) {
     setText(cloudConnectionLabel, 'Unavailable');
     connectCloudButton.disabled = true;
     setCloudMessage('Secure operating-system credential storage is unavailable.', true);

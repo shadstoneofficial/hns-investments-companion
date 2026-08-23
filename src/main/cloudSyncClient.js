@@ -85,9 +85,17 @@ function createCloudSyncClient(options) {
   const now = options.now || (() => new Date());
   let state = normalizeState({}, endpoint);
   let loaded = false;
+  let vaultAvailability = null;
 
   if (!vault?.encrypt || !vault?.decrypt) {
     throw new Error('A credential vault adapter is required.');
+  }
+
+  function checkVaultAvailability() {
+    if (vaultAvailability === null) {
+      vaultAvailability = vault.available === true;
+    }
+    return vaultAvailability;
   }
 
   async function load() {
@@ -116,8 +124,8 @@ function createCloudSyncClient(options) {
     return {
       endpointConfigured: !!state.endpoint,
       accountUrl: state.endpoint ? `${state.endpoint}/account` : '',
-      credentialStorageAvailable: vault.available === true,
-      connected: vault.available === true && !!state.encryptedDeviceToken,
+      credentialStorageAvailable: vaultAvailability,
+      connected: !!state.encryptedDeviceToken,
       deviceId: state.deviceId,
       preferences: { ...state.preferences },
       pairing: state.pairing ? {
@@ -168,7 +176,7 @@ function createCloudSyncClient(options) {
 
   async function startPairing(deviceName) {
     await load();
-    if (vault.available !== true) {
+    if (!checkVaultAvailability()) {
       throw new Error('Secure operating-system credential storage is unavailable on this computer.');
     }
     const pairing = await request('/api/v1/device-pairings', {
