@@ -4,12 +4,12 @@ HNS Investments releases are public. Keep wallet data, local scan output, bridge
 
 ## Version
 
-Current planned release: `v0.1.3`
+Current planned release: `v0.1.4`
 
 Expected macOS release assets:
 
-- `HNS-Investments-0.1.3-arm64.dmg`
-- `HNS-Investments-0.1.3-x64.dmg`
+- `HNS-Investments-0.1.4-arm64.dmg`
+- `HNS-Investments-0.1.4-x64.dmg`
 - `SHA256SUMS.txt`
 
 ## Mike Machine Prep
@@ -42,12 +42,14 @@ npm test
 Build signed, notarized, and stapled DMGs:
 
 ```bash
-export NOTARY_KEYCHAIN_PROFILE="skyinclude-notary"
 export MAC_ARCHES="arm64 x64"
+export NOTARY_API_KEY_PATH="/secure/path/to/AuthKey_KEYID.p8"
+export NOTARY_API_KEY_ID="KEYID"
+export NOTARY_API_ISSUER="ISSUER_UUID"
 npm run package-mac-notarized
 ```
 
-If a keychain profile is unavailable, use Apple notarization environment variables outside the repo. Do not write Apple IDs, app-specific passwords, team IDs, `.p8`, `.p12`, or keychain material into repo files or release notes.
+Alternatively, use `NOTARY_KEYCHAIN_PROFILE` or Apple notarization environment variables outside the repo. Do not write Apple IDs, app-specific passwords, team IDs, API key IDs, issuer IDs, `.p8`, `.p12`, or keychain material into repo files or release notes.
 
 ## Verification
 
@@ -57,11 +59,11 @@ Run on Janice's machine after packaging:
 codesign --verify --deep --strict --verbose=2 "dist/mac-arm64/HNS Investments.app"
 xcrun stapler validate "dist/mac-arm64/HNS Investments.app"
 spctl --assess --type execute --verbose "dist/mac-arm64/HNS Investments.app"
-codesign --verify --verbose=2 "dist/HNS-Investments-0.1.3-arm64.dmg"
-xcrun stapler validate "dist/HNS-Investments-0.1.3-arm64.dmg"
-spctl --assess --type open --context context:primary-signature --verbose "dist/HNS-Investments-0.1.3-arm64.dmg"
-hdiutil verify "dist/HNS-Investments-0.1.3-arm64.dmg"
-(cd dist && shasum -a 256 HNS-Investments-0.1.3-*.dmg > SHA256SUMS.txt)
+codesign --verify --verbose=2 "dist/HNS-Investments-0.1.4-arm64.dmg"
+xcrun stapler validate "dist/HNS-Investments-0.1.4-arm64.dmg"
+spctl --assess --type open --context context:primary-signature --verbose "dist/HNS-Investments-0.1.4-arm64.dmg"
+hdiutil verify "dist/HNS-Investments-0.1.4-arm64.dmg"
+(cd dist && shasum -a 256 HNS-Investments-0.1.4-*.dmg > SHA256SUMS.txt)
 cat dist/SHA256SUMS.txt
 ```
 
@@ -72,20 +74,20 @@ Repeat app and DMG verification for x64 before publishing if x64 is included.
 Create a prerelease only after both DMGs are signed, notarized, stapled, verified, and checksummed.
 
 ```bash
-gh release create v0.1.3 \
-  dist/HNS-Investments-0.1.3-arm64.dmg \
-  dist/HNS-Investments-0.1.3-x64.dmg \
+gh release create v0.1.4 \
+  dist/HNS-Investments-0.1.4-arm64.dmg \
+  dist/HNS-Investments-0.1.4-x64.dmg \
   dist/SHA256SUMS.txt \
   --repo shadstoneofficial/hns-investments-companion \
-  --title "HNS Investments v0.1.3" \
+  --title "HNS Investments v0.1.4" \
   --prerelease \
-  --notes-file docs/RELEASE_NOTES_v0.1.3.md
+  --notes-file docs/RELEASE_NOTES_v0.1.4.md
 ```
 
 Verify:
 
 ```bash
-gh release view v0.1.3 --repo shadstoneofficial/hns-investments-companion --json tagName,targetCommitish,isPrerelease,url,assets
+gh release view v0.1.4 --repo shadstoneofficial/hns-investments-companion --json tagName,targetCommitish,isPrerelease,url,assets
 ```
 
 ## Do Not Publish If

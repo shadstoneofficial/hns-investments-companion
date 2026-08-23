@@ -252,6 +252,15 @@ setup_dmg_signing_keychain
 NOTARY_ARGS=()
 if [[ -n "${NOTARY_KEYCHAIN_PROFILE:-}" ]]; then
   NOTARY_ARGS=(--keychain-profile "${NOTARY_KEYCHAIN_PROFILE}")
+elif [[ -n "${NOTARY_API_KEY_PATH:-}" || -n "${NOTARY_API_KEY_ID:-}" || -n "${NOTARY_API_ISSUER:-}" ]]; then
+  require_env "NOTARY_API_KEY_PATH"
+  require_env "NOTARY_API_KEY_ID"
+  require_env "NOTARY_API_ISSUER"
+  NOTARY_ARGS=(
+    --key "${NOTARY_API_KEY_PATH}"
+    --key-id "${NOTARY_API_KEY_ID}"
+    --issuer "${NOTARY_API_ISSUER}"
+  )
 else
   require_env "APPLE_ID"
   require_env "APPLE_APP_SPECIFIC_PASSWORD"
