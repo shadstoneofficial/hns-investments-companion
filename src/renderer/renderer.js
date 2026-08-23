@@ -47,6 +47,9 @@ const registryHowButton = document.getElementById('registryHowButton');
 const viewEyebrow = document.getElementById('viewEyebrow');
 const viewTitle = document.getElementById('viewTitle');
 const coinsSummary = document.getElementById('coinsSummary');
+const coinsTotalSpendable = document.getElementById('coinsTotalSpendable');
+const coinsTotalConfirmed = document.getElementById('coinsTotalConfirmed');
+const coinsTotalLocked = document.getElementById('coinsTotalLocked');
 const coinsTable = document.getElementById('coinsTable');
 const walletsSummary = document.getElementById('walletsSummary');
 const walletsTable = document.getElementById('walletsTable');
@@ -169,6 +172,7 @@ const SETTINGS_KEY = 'hnsInvestments.uiState.v1';
 const MANUAL_WATCHLIST_KEY = 'hnsInvestments.manualWatchlist.v1';
 const AUTO_REFRESH_INTERVAL_MS = 60 * 1000;
 const HNS_BLOCK_MINUTES = 10;
+const {coinTotals, currentLockedHns, freeConfirmedHns} = window.hnsCoinBalances;
 
 let currentResult = null;
 let communityRegistry = null;
@@ -921,14 +925,6 @@ function formatHns(value) {
   });
 }
 
-function lockedHns(wallet) {
-  return Number(wallet.lockedConfirmedHns || 0) + Number(wallet.lockedUnconfirmedHns || 0);
-}
-
-function freeConfirmedHns(wallet) {
-  return Math.max(Number(wallet.confirmedHns || 0) - Number(wallet.lockedConfirmedHns || 0), 0);
-}
-
 function nameLength(name) {
   const rendered = renderedNameLabel(name);
   return Array.from(rendered || name.name || '').length;
@@ -977,7 +973,7 @@ function walletRows(result) {
       coinStatus: '',
       status: wallet.encrypted ? 'encrypted' : wallet.watchOnly ? 'watch-only' : 'ready'
     };
-    const locked = lockedHns(wallet);
+    const locked = currentLockedHns(wallet);
     const unconfirmedDelta = Number(wallet.unconfirmedHns || 0) - Number(wallet.confirmedHns || 0);
     row.coinStatus = locked > 0 ? 'locked hns' : unconfirmedDelta !== 0 ? 'unconfirmed hns' : '';
     rowsByWallet.set(label, row);
@@ -1317,7 +1313,7 @@ function updatePortfolioDashboard(result) {
   const names = result.names || [];
   const coins = result.coins || {};
   const coinWallets = coins.wallets || [];
-  const totalFreeConfirmed = coinWallets.reduce((total, wallet) => total + freeConfirmedHns(wallet), 0);
+  const totals = coinTotals(coinWallets);
   const walletCount = result.bridge?.ok ? result.bridge.walletCount : result.summary?.walletStorageHintCount || 0;
   const shakedex = result.shakedex || {};
   const listings = shakedex.listingCount || shakedex.listings?.length || 0;
@@ -1329,7 +1325,7 @@ function updatePortfolioDashboard(result) {
   const soonExpirations = expirations.filter((row) => row.risk === 'Renew Soon').length;
 
   setText(dashboardDomains, `${names.length} names indexed`);
-  setText(dashboardCoins, coins.ok ? `${formatHns(totalFreeConfirmed)} HNS free confirmed` : coins.status || 'Bridge needed');
+  setText(dashboardCoins, coins.ok ? `${formatHns(totals.spendableHns)} HNS spendable` : coins.status || 'Bridge needed');
   setText(dashboardWallets, `${walletCount} wallets`);
   setText(dashboardAttention, `${renewalCount} renewals · ${idnCount} IDNs`);
   setText(dashboardExpirations, urgentExpirations
@@ -1534,7 +1530,7 @@ async function loadRegistry() {
 }
 
 function coinStatus(wallet) {
-  const locked = lockedHns(wallet);
+  const locked = currentLockedHns(wallet);
   const unconfirmedDelta = Number(wallet.unconfirmedHns || 0) - Number(wallet.confirmedHns || 0);
   if (wallet.encrypted) return 'encrypted';
   if (wallet.watchOnly) return 'watch-only';
@@ -1545,7 +1541,7 @@ function coinStatus(wallet) {
 
 function coinSortValue(wallet, key) {
   if (key === 'lockedHns') {
-    return lockedHns(wallet);
+    return currentLockedHns(wallet);
   }
 
   if (key === 'freeConfirmedHns') {
@@ -1575,9 +1571,12 @@ function sortedCoinWallets(wallets) {
 function renderCoins(result) {
   const coins = result.coins || {};
   const wallets = coins.wallets || [];
-  const totalFreeConfirmed = wallets.reduce((total, wallet) => total + freeConfirmedHns(wallet), 0);
+  const totals = coinTotals(wallets);
 
-  setText(coinsSummary, coins.ok ? `${formatHns(totalFreeConfirmed)} HNS free confirmed` : coins.status || 'Bridge needed');
+  setText(coinsSummary, coins.ok ? `${wallets.length} wallets aggregated` : coins.status || 'Bridge needed');
+  setText(coinsTotalSpendable, coins.ok ? `${formatHns(totals.spendableHns)} HNS` : 'Unavailable');
+  setText(coinsTotalConfirmed, coins.ok ? `${formatHns(totals.confirmedHns)} HNS` : 'Unavailable');
+  setText(coinsTotalLocked, coins.ok ? `${formatHns(totals.currentLockedHns)} HNS` : 'Unavailable');
 
   if (!coins.ok) {
     renderEmptyRow(coinsTable, 7, 'Install or run a Bob LearnHNS build with the coin balance bridge endpoint.');
@@ -1591,7 +1590,7 @@ function renderCoins(result) {
 
   coinsTable.innerHTML = '';
   for (const wallet of sortedCoinWallets(wallets)) {
-    const locked = lockedHns(wallet);
+    const locked = currentLockedHns(wallet);
     appendTableRow(coinsTable, [
       wallet.wallet,
       `${formatHns(freeConfirmedHns(wallet))} HNS`,

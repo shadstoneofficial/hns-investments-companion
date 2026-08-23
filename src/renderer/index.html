@@ -222,7 +222,21 @@
           <div class="panel table-panel">
             <div class="panel-header">
               <h3>Coins</h3>
-              <span id="coinsSummary">0 HNS free confirmed</span>
+              <span id="coinsSummary">0 wallets</span>
+            </div>
+            <div class="coin-totals" aria-label="Aggregate HNS balances">
+              <article>
+                <span>Spendable now</span>
+                <strong id="coinsTotalSpendable">0 HNS</strong>
+              </article>
+              <article>
+                <span>Total confirmed</span>
+                <strong id="coinsTotalConfirmed">0 HNS</strong>
+              </article>
+              <article>
+                <span>Currently locked</span>
+                <strong id="coinsTotalLocked">0 HNS</strong>
+              </article>
             </div>
             <div class="table-scroll">
               <table>
@@ -239,10 +253,10 @@
                   <tr>
                     <th><button class="coin-sort-button" type="button" data-coin-sort="wallet" title="Bob LearnHNS wallet label.">Wallet</button></th>
                     <th><button class="coin-sort-button active desc" type="button" data-coin-sort="freeConfirmedHns" title="Confirmed HNS minus confirmed locked HNS. This is the conservative spreadsheet-style number.">Free confirmed</button></th>
-                    <th><button class="coin-sort-button" type="button" data-coin-sort="spendableHns" title="Bob/hsd spendable estimate. This can include mempool state and may be higher than conservative free confirmed HNS.">Estimated spendable</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="spendableHns" title="The spendable balance reported by Bob/hsd, including current mempool state.">Spendable now</button></th>
                     <th><button class="coin-sort-button" type="button" data-coin-sort="confirmedHns" title="Total confirmed wallet balance reported by Bob/hsd. May include confirmed locked covenant or auction-related coins.">Confirmed</button></th>
                     <th><button class="coin-sort-button" type="button" data-coin-sort="unconfirmedHns" title="Wallet balance with mempool effects reported by Bob/hsd. Not simply pending incoming HNS.">Unconfirmed</button></th>
-                    <th><button class="coin-sort-button" type="button" data-coin-sort="lockedHns" title="Confirmed plus unconfirmed HNS Bob/hsd marks as locked by auctions, covenants, listings, or pending operations.">Locked</button></th>
+                    <th><button class="coin-sort-button" type="button" data-coin-sort="lockedHns" title="The current locked balance reported by Bob/hsd. Confirmed and unconfirmed views are not added together.">Currently locked</button></th>
                     <th><button class="coin-sort-button" type="button" data-coin-sort="status" title="Quick warning label derived from encryption, watch-only, locked, or unconfirmed wallet state.">Status</button></th>
                   </tr>
                 </thead>
@@ -258,8 +272,8 @@
                   <span>Confirmed minus confirmed locked. This is the most conservative number for manual reconciliation.</span>
                 </div>
                 <div>
-                  <strong>Estimated spendable</strong>
-                  <span>Bob/hsd max-send style estimate. It can include mempool state and may be higher than free confirmed.</span>
+                  <strong>Spendable now</strong>
+                  <span>Bob/hsd balance available to spend after current auction, covenant, and mempool locks.</span>
                 </div>
                 <div>
                   <strong>Confirmed</strong>
@@ -270,8 +284,8 @@
                   <span>Balance with unconfirmed transaction effects. This is not only incoming pending HNS.</span>
                 </div>
                 <div>
-                  <strong>Locked</strong>
-                  <span>HNS tied up by auctions, covenants, listings, pending operations, or wallet locks.</span>
+                  <strong>Currently locked</strong>
+                  <span>Current HNS tied up by auctions, covenants, listings, pending operations, or wallet locks.</span>
                 </div>
                 <div>
                   <strong>Status</strong>
@@ -719,6 +733,7 @@
       </form>
     </dialog>
 
+    <script src="./coinBalances.js"></script>
     <script src="./renderer.js"></script>
   </body>
 </html>
