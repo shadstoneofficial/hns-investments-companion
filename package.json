@@ -1,6 +1,6 @@
 {
   "name": "hns-investments-companion",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "HNS Investments companion app for read-only Bob LearnHNS portfolio discovery.",
   "main": "src/main/main.js",
   "author": "HNS Investments",

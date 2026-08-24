@@ -119,14 +119,24 @@ function unicodeName(asciiName) {
   return domainToUnicode(asciiName) || asciiName;
 }
 
+function isFinalOwnership(name) {
+  if (typeof name.ownershipFinal === 'boolean') return name.ownershipFinal;
+  return name.status === 'owned' || name.status === 'transfer-pending-or-history';
+}
+
 function normalizeBridgeName(name, network = 'main') {
   const asciiName = normalizeBridgeNameValue(name.name);
-  const expiresAt = expirationHeight(name.renewalHeight, network);
+  const ownershipFinal = isFinalOwnership(name);
+  const expiresAt = ownershipFinal
+    ? expirationHeight(name.renewalHeight, network)
+    : 0;
   return {
     name: asciiName,
     unicodeName: unicodeName(asciiName),
     isIdn: asciiName.includes('xn--'),
     status: name.status || 'owned',
+    auctionState: name.auctionState || '',
+    ownershipFinal,
     wallet: name.walletDisplayName || name.walletId || 'Bob LearnHNS',
     expires: heightLabel(expiresAt),
     renewalHeight: name.renewalHeight || '',
@@ -295,5 +305,7 @@ module.exports = {
   fetchBobBridgeCoins,
   fetchBobBridgePortfolio,
   fetchBobBridgeShakedex,
+  isFinalOwnership,
+  normalizeBridgeName,
   readBridgeManifest
 };

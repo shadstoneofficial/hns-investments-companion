@@ -1064,7 +1064,7 @@ function renderAttention(result) {
         name.name,
         name.wallet,
         name.renewalHeight,
-        name.status
+        domainStatusLabel(name.status)
       ]);
     }
   }
@@ -1081,6 +1081,22 @@ function renderAttention(result) {
       ]);
     }
   }
+}
+
+function domainStatusLabel(status) {
+  const labels = {
+    'auction-opening': 'Auction opening',
+    'auction-locked': 'Claim locked',
+    'auction-bidding': 'Bidding',
+    'auction-reveal-leading': 'Reveal pending · currently leading',
+    'auction-won-registration-pending': 'Won · registration pending',
+    'auction-pending': 'Auction pending',
+    'transfer-pending-or-history': 'Transfer pending',
+    owned: 'Owned',
+    expired: 'Expired',
+    revoked: 'Revoked'
+  };
+  return labels[status] || status || 'Unknown';
 }
 
 function currentHeight(result) {
@@ -1779,7 +1795,7 @@ function renderNames(names, result) {
     renderCell.textContent = renderedNameLabel(name);
 
     const statusCell = document.createElement('td');
-    statusCell.textContent = name.status || 'unknown';
+    statusCell.textContent = domainStatusLabel(name.status);
     if (fulfillment) {
       const badge = document.createElement('span');
       badge.className = 'status-badge shakedex-bought-badge';
@@ -1798,7 +1814,9 @@ function renderNames(names, result) {
     walletCell.textContent = name.wallet || 'unknown';
 
     const expiresCell = document.createElement('td');
-    expiresCell.textContent = name.expires || 'unknown';
+    expiresCell.textContent = name.ownershipFinal === false
+      ? 'Not finalized'
+      : (name.expires || 'unknown');
 
     const tagsCell = document.createElement('td');
     tagsCell.className = 'tags-cell';

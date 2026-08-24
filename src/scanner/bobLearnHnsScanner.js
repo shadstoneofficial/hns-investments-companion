@@ -284,7 +284,7 @@ async function scanBobLearnHns() {
         0
       ),
       indexedNameCount: names.length,
-      ownedNameCount: bridgeNames.length,
+      ownedNameCount: bridgeNames.filter((name) => name.ownershipFinal).length,
       shakedexListingOnlyCount: names.length - bridgeNames.length,
       mode: bridge.ok ? 'bob-learnhns-read-only-bridge' : 'read-only-filesystem-discovery',
       modeLabel: bridge.ok ? 'Bridge' : 'Discovery',
